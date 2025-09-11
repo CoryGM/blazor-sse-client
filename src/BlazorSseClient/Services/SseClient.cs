@@ -198,7 +198,7 @@ public sealed class SseClient : IAsyncDisposable
                 }
                 else
                 {
-                    (dead ??= new()).Add(kvp.Key);
+                    (dead ??= []).Add(kvp.Key);
                 }
             }
 
