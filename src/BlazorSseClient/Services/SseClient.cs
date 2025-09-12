@@ -6,7 +6,7 @@ namespace BlazorSseClient.Services;
 /// <summary>
 /// Browser (EventSource via JS) SSE client using weak-reference subscriptions.
 /// </summary>
-public sealed class SseClient : IAsyncDisposable
+public sealed class SseClient : ISseClient, IAsyncDisposable
 {
     private readonly IJSRuntime _js;
     private IJSObjectReference? _module;
@@ -93,7 +93,7 @@ public sealed class SseClient : IAsyncDisposable
 
     private void DispatchConnectionStateChange(SseConnectionState state)
     {
-        _connectionState = state == SseConnectionState.Reopened ? SseConnectionState.Open : 
+        _connectionState = state == SseConnectionState.Reopened ? SseConnectionState.Open :
                                                                   state;
 
         //  Dispatch events based on state
@@ -103,21 +103,24 @@ public sealed class SseClient : IAsyncDisposable
     {
     }
 
+    private void ThrowIfDisposed() =>
+        ObjectDisposedException.ThrowIf(_disposed, nameof(SseClient));
+
     public async ValueTask DisposeAsync()
     {
-        if (_disposed) 
+        if (_disposed)
             return;
 
         if (_module is not null)
         {
-            try 
-            { 
-                await _module.InvokeVoidAsync("stopSse").ConfigureAwait(false); 
-            } 
-            catch 
-            { 
+            try
+            {
+                await _module.InvokeVoidAsync("stopSse").ConfigureAwait(false);
             }
-            
+            catch
+            {
+            }
+
             await _module.DisposeAsync().ConfigureAwait(false);
         }
 
@@ -209,7 +212,7 @@ public sealed class SseClient : IAsyncDisposable
             _parent.DispatchOnMessage(sseEvent);
         }
     }
-
+}
 
     // Lifecycle ----------------------------------------------------------------
 
@@ -516,4 +519,4 @@ public sealed class SseClient : IAsyncDisposable
 
     //    private void ThrowIfDisposed() =>
     //        ObjectDisposedException.ThrowIf(_disposed, nameof(SseClient));
-}
+//}

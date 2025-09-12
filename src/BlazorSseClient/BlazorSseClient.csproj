@@ -4,6 +4,10 @@
 		<RazorClassLibrary>true</RazorClassLibrary>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<IncludeSymbols>true</IncludeSymbols>
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<IsPackable>true</IsPackable>
 
 		<!-- Optional: NuGet metadata -->
 		<PackageId>BlazorSseClient</PackageId>
