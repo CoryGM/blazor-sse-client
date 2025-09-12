@@ -1,4 +1,4 @@
-﻿namespace BlazorSseClient.Demo.Api.Data.SportsScores
+﻿namespace BlazorSseClient.Demo.Api.SportsScores.Data
 {
     public static class Teams
     {

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace BlazorSseClient.Demo.Api.Data.Weather
+namespace BlazorSseClient.Demo.Api.Weather.Data
 {
     internal sealed class Reading
     {

@@ -1,4 +1,4 @@
-﻿namespace BlazorSseClient.Demo.Api.Data.Stocks
+﻿namespace BlazorSseClient.Demo.Api.Stocks.Data
 {
     public interface IStockService
     {

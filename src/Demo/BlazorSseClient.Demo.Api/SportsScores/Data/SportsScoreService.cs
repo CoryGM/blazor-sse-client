@@ -1,6 +1,6 @@
-﻿namespace BlazorSseClient.Demo.Api.Data.SportsScores
+﻿namespace BlazorSseClient.Demo.Api.SportsScores.Data
 {
-    public class SportsScoreService
+    public class SportsScoreService : ISportsScoreService
     {
         private readonly string[] _sports = ["Basketball", "Baseball", "Hockey", "Tennis", "Football", "Soccer"];
 
@@ -75,6 +75,6 @@
             var index = Random.Shared.Next(0, _sports.Length);
 
             return _sports[index];
-        }   
+        }
     }
 }

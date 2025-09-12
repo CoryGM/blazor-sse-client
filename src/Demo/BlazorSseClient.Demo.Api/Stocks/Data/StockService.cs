@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace BlazorSseClient.Demo.Api.Data.Stocks
+namespace BlazorSseClient.Demo.Api.Stocks.Data
 {
     public class StockService : IStockService
     {

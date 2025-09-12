@@ -1,4 +1,4 @@
-﻿namespace BlazorSseClient.Demo.Api.Data.Locations
+﻿namespace BlazorSseClient.Demo.Api.Locations.Data
 {
     public static class Cities
     {

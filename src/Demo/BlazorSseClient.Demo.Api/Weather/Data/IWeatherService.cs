@@ -1,6 +1,6 @@
-﻿using BlazorSseClient.Demo.Api.Data.Locations;
+﻿using BlazorSseClient.Demo.Api.Locations.Data;
 
-namespace BlazorSseClient.Demo.Api.Data.Weather
+namespace BlazorSseClient.Demo.Api.Weather.Data
 {
     public interface IWeatherService
     {

@@ -1,6 +1,6 @@
-﻿using BlazorSseClient.Demo.Api.Data.Locations;
+﻿using BlazorSseClient.Demo.Api.Locations.Data;
 
-namespace BlazorSseClient.Demo.Api.Data.Weather
+namespace BlazorSseClient.Demo.Api.Weather.Data
 {
     public class WeatherService : IWeatherService
     {
@@ -23,15 +23,15 @@ namespace BlazorSseClient.Demo.Api.Data.Weather
             CancellationToken cancellationToken = default)
         {
             var httpClient = _httpClientFactory.CreateClient("WeatherApi");
-            var queryString = $"latitude={location.Latitude}" +
+            var url = $"v1/forecast?latitude={location.Latitude}" +
                 $"&longitude={location.Longitude}" +
                 "&current=temperature_2m,relative_humidity_2m,is_day,wind_speed_10m,wind_direction_10m,wind_gusts_10m,weather_code,precipitation,apparent_temperature" +
                 "&forecast_days=1" +
                 "&wind_speed_unit=mph" +
                 "&temperature_unit=fahrenheit" +
                 "&precipitation_unit=inch";
-
-            var response = await httpClient.GetAsync($"forecast?{queryString}", cancellationToken);
+            
+            var response = await httpClient.GetAsync(url, cancellationToken);
 
             if (!response.IsSuccessStatusCode)
                 return null;

@@ -1,6 +1,6 @@
-﻿namespace BlazorSseClient.Demo.Api.Data.Weather
+﻿namespace BlazorSseClient.Demo.Api.Weather.Data
 {
-    public record struct CurrentWeather
+    public readonly record struct CurrentWeather
     {
         public required string City { get; init; }
         public required double Latitude { get; init; }
