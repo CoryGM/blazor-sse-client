@@ -29,4 +29,8 @@
 	  <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
 	  <PackageReference Include="Microsoft.JSInterop" Version="8.0.20" />
 	</ItemGroup>
+
+	<ItemGroup>
+	  <Folder Include="Server\" />
+	</ItemGroup>
 </Project>

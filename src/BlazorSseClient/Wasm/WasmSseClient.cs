@@ -1,36 +1,44 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using BlazorSseClient.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 
-namespace BlazorSseClient.Services;
+namespace BlazorSseClient.Wasm;
 
 /// <summary>
 /// Browser (EventSource via JS) SSE client using weak-reference subscriptions.
 /// </summary>
-public sealed class SseClient : ISseClient, IAsyncDisposable
+public sealed class WasmSseClient : ISseClient, IAsyncDisposable
 {
     private readonly IJSRuntime _js;
     private IJSObjectReference? _module;
     private DotNetObjectReference<CallbackSink>? _objRef;
     private readonly CallbackSink _sink;
-    private readonly ILogger<SseClient>? _logger;
+    private readonly ILogger<WasmSseClient>? _logger;
     private SseRunState _runState = SseRunState.Stopped;
     private SseConnectionState _connectionState = SseConnectionState.Closed;
     private bool _disposed = false;
     private string? _currentUrl = null;
+    private string? _defaultUrl = null;
 
     public SseRunState RunState { get => _runState; }
     public SseConnectionState ConnectionState { get => _connectionState; }
 
-    public SseClient(IJSRuntime js, ILogger<SseClient>? logger = null)
+    public WasmSseClient(IJSRuntime js, string? defaultUrl = null, bool? autoStart = false, ILogger<WasmSseClient>? logger = null)
     {
         ArgumentNullException.ThrowIfNull(js, nameof(js));
 
         _js = js;
+        _defaultUrl = defaultUrl;
         _logger = logger;
         _sink = new CallbackSink(this, logger);
         _objRef = DotNetObjectReference.Create(_sink);
 
-        _logger?.LogTrace("SseClient constructed.");
+        _logger?.LogTrace($"WasmSseClient constructed. Default Url: {_defaultUrl ?? "None"}; AutoStart: {autoStart}");
+
+        if (autoStart == true && !String.IsNullOrWhiteSpace(_defaultUrl))
+        {
+            _ = StartAsync(_defaultUrl!, false);
+        }
     }
 
     /// <summary>
@@ -104,25 +112,17 @@ public sealed class SseClient : ISseClient, IAsyncDisposable
     }
 
     private void ThrowIfDisposed() =>
-        ObjectDisposedException.ThrowIf(_disposed, nameof(SseClient));
+        ObjectDisposedException.ThrowIf(_disposed, nameof(WasmSseClient));
 
     public async ValueTask DisposeAsync()
     {
         if (_disposed)
             return;
 
-        if (_module is not null)
-        {
-            try
-            {
-                await _module.InvokeVoidAsync("stopSse").ConfigureAwait(false);
-            }
-            catch
-            {
-            }
+        await InternalStopAsync().ConfigureAwait(false);
 
+        if (_module is not null)
             await _module.DisposeAsync().ConfigureAwait(false);
-        }
 
         _module = null;
         _objRef?.Dispose();
@@ -141,10 +141,10 @@ public sealed class SseClient : ISseClient, IAsyncDisposable
     /// </summary>
     /// <param name="parent"></param>
     /// <param name="logger"></param>
-    private sealed class CallbackSink(SseClient parent, ILogger<SseClient>? logger)
+    private sealed class CallbackSink(WasmSseClient parent, ILogger<WasmSseClient>? logger)
     {
-        private readonly SseClient _parent = parent;
-        private readonly ILogger<SseClient>? _logger = logger;
+        private readonly WasmSseClient _parent = parent;
+        private readonly ILogger<WasmSseClient>? _logger = logger;
 
         /// <summary>
         /// Handler for run state changes from JS.

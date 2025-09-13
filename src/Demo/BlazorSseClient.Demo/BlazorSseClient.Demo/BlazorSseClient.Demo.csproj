@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\BlazorSseClient.ServiceDefaults\BlazorSseClient.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\BlazorSseClient.Demo.Shared\BlazorSseClient.Demo.Shared.csproj" />
     <ProjectReference Include="..\BlazorSseClient.Demo.Client\BlazorSseClient.Demo.Client.csproj" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.20" />
   </ItemGroup>
