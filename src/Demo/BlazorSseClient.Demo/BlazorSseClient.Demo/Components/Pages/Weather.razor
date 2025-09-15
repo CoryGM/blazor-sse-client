@@ -37,6 +37,9 @@ else
 }
 
 @code {
+    [Inject]
+    private ISseClient SseClient { get; set; } = null!;
+
     private WeatherForecast[]? forecasts;
 
     protected override async Task OnInitializedAsync()
