@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
@@ -10,7 +10,7 @@
     <ProjectReference Include="..\..\..\BlazorSseClient.ServiceDefaults\BlazorSseClient.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\BlazorSseClient.Demo.Shared\BlazorSseClient.Demo.Shared.csproj" />
     <ProjectReference Include="..\BlazorSseClient.Demo.Client\BlazorSseClient.Demo.Client.csproj" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="8.0.20" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="9.0.9" />
   </ItemGroup>
 
 </Project>

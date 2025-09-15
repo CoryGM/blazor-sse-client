@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-namespace BlazorSseClient.Demo.Shared.Weather.Components.Weather
+﻿namespace BlazorSseClient.Demo.Shared.Weather.Sse
 {
-    public readonly record struct CurrentWeatherModel
+    public readonly record struct CurrentWeatherSseModel
     {
         public required string City { get; init; }
         public required double Latitude { get; init; }
