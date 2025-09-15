@@ -26,6 +26,18 @@ builder.Services.AddHttpClient("WeatherApi", client =>
 
 builder.Services.AddControllers();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("SseCorsPolicy", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .WithMethods("GET")
+            .WithHeaders("Content-Type")
+            .WithExposedHeaders("Content-Type");
+    });
+});
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -46,5 +58,7 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.UseCors();
 
 app.Run();

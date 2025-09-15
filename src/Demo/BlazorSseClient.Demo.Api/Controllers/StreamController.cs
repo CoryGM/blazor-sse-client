@@ -1,5 +1,5 @@
 ﻿using BlazorSseClient.Demo.Api.Queues;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BlazorSseClient.Demo.Api.Controllers
@@ -17,9 +17,11 @@ namespace BlazorSseClient.Demo.Api.Controllers
 
         [HttpGet]
         [Route("messages")]
+        [EnableCors("SseCorsPolicy")] 
         public async Task Stream(CancellationToken token)
         {
             Response.ContentType = "text/event-stream";
+            Response.Headers.Append("Cache-Control", "no-cache");
 
             while (!token.IsCancellationRequested)
             {

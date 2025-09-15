@@ -52,8 +52,8 @@ export function getConnectionState() {
 function runStateChanged(newState, broadcast) {
     runState = newState;
 
-    if (broadcast && dotNetReference) {
-        dotNetReference.invokeMethodAsync(STATE_RUN_CHANGE_METHOD, runState);
+    if (broadcast && dotNetRef) {
+        dotNetRef.invokeMethodAsync(STATE_RUN_CHANGE_METHOD, runState);
     }
 }
 
@@ -89,14 +89,18 @@ function connectionStateChanged(newState, broadcast) {
 
 function connect() {
     if (!dotNetRef) return;
-    if (!runState) return;
-    if (runState !== STATE_RUN_STOPPED) return;
-    if (connectionState !== STATE_CONNECTION_CLOSED && connectionStatue !== STATE_CONNECTION_REOPENING) return;
+    if (runState !== STATE_RUN_STARTING && runState !== STATE_RUN_STARTED) return;
+    if (connectionState !== STATE_CONNECTION_CLOSED && connectionState !== STATE_CONNECTION_REOPENING) return;
 
     if (reconnectAttempts === 0) {
         connectionStateChanged(STATE_CONNECTION_OPENING, true);
     }
 
+    // This is set to 1 because we only want to a single "reopening" event,
+    // even if we have multiple reconnect attempts. The purpose of the state
+    // change is to notify the app that the connection was lost, and is now
+    // being re-established. We don't need to notifiy it again on subsequent
+    // attempts.
     if (reconnectAttempts === 1) {
         connectionStateChanged(STATE_CONNECTION_REOPENING, true);
     }
@@ -129,7 +133,7 @@ function connect() {
 }
 
 function scheduleReconnect() {
-    if (isStopped || reconnectTimer || !dotNetRef) return;
+    if (runState === STATE_RUN_STOPPED || reconnectTimer || !dotNetRef) return;
 
     connectionStateChanged(STATE_CONNECTION_REOPENING, true);
 
@@ -140,7 +144,7 @@ function scheduleReconnect() {
     reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
 
-        if (isStopped || !dotNetRef) return;
+        if (runState === STATE_RUN_STOPPED || !dotNetRef) return;
 
         reconnectAttempts++;
 

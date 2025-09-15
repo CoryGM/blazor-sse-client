@@ -97,6 +97,7 @@ public sealed class WasmSseClient : ISseClient, IAsyncDisposable
         _runState = state;
 
         //  Dispatch events based on state
+        Console.WriteLine($"Run state changed to {_runState}");
     }
 
     private void DispatchConnectionStateChange(SseConnectionState state)
@@ -104,11 +105,13 @@ public sealed class WasmSseClient : ISseClient, IAsyncDisposable
         _connectionState = state == SseConnectionState.Reopened ? SseConnectionState.Open :
                                                                   state;
 
+        Console.WriteLine($"Connection state changed to {_connectionState}");
         //  Dispatch events based on state
     }
 
     private void DispatchOnMessage(SseEvent? sseMessage)
     {
+        Console.WriteLine($"Received SSE Message: {sseMessage?.EventType} - {sseMessage?.Data}");
     }
 
     private void ThrowIfDisposed() =>

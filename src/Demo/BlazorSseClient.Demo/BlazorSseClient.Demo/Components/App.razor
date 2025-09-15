@@ -18,3 +18,13 @@
 </body>
 
 </html>
+
+@code {
+    [Inject]
+    private ISseClient SseClient { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SseClient.StartAsync("https://localhost:7290/api/stream/messages").ConfigureAwait(false);
+    }
+}

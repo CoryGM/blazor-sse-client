@@ -1,5 +1,7 @@
-using BlazorSseClient.Demo.Client.Pages;
+﻿using BlazorSseClient.Demo.Client.Pages;
 using BlazorSseClient.Demo.Components;
+using BlazorSseClient.Server;
+using BlazorSseClient.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,6 +11,9 @@ builder.AddServiceDefaults();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+// Configure HttpClient to connect to the api using service discovery
+builder.Services.AddSingleton<ISseClient, ServerSseClient>();
 
 var app = builder.Build();
 
