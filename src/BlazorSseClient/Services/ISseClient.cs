@@ -2,7 +2,7 @@ namespace BlazorSseClient.Services;
 
 public interface ISseClient : IAsyncDisposable
 {
-    Task StartAsync(string url, bool restartOnDifferentUrl = true);
+    Task StartAsync(string? url = null, bool restartOnDifferentUrl = true);
     Task StopAsync();
 
     //Guid Subscribe(string eventType, Action<SseEvent> callback);

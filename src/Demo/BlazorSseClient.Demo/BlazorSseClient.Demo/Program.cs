@@ -12,8 +12,11 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
-// Configure HttpClient to connect to the api using service discovery
-builder.Services.AddSingleton<ISseClient, ServerSseClient>();
+builder.Services.AddServerSseClient(options =>
+{
+    options.BaseAddress = builder.Configuration["Sse:BaseAddress"];
+    options.Timeout = Timeout.InfiniteTimeSpan;
+});
 
 var app = builder.Build();
 

@@ -2,11 +2,14 @@
 let reconnectAttempts = 0;
 let reconnectTimer = null;
 let dotNetRef = null;
-let sseUrl = null;
+let currentUrl = null;
 
-const BASE_DELAY_MS = 1000;
-const MAX_DELAY_MS = 10000;
-const JITTER_MS = 500;
+let cfg = {
+    reconnectBaseDelayMs: 1000,
+    reconnectMaxDelayMs: 10000,
+    reconnectJitterMs: 500,
+    useCredentials: false
+};
 
 const STATE_RUN_CHANGE_METHOD = 'OnSseRunStateChange';
 const STATE_RUN_NAMES = ['Unknown', 'Starting', 'Started', 'Stopping', 'Stopped'];
@@ -28,13 +31,29 @@ const STATE_CONNECTION_CLOSED = 5;
 let runState = STATE_RUN_STOPPED;
 let connectionState = STATE_CONNECTION_CLOSED;
 
-export function startSse(url, dotNetReference) {
+function log(...args) {
+    console.debug("[SSE]", ...args);
+}
+
+function warn(...args) {
+    if (cfg.debug) {
+        console.warn("[SSE]", ...args);
+    }
+}
+
+export function startSse(url, dotNetReference, options) {
     stopSse(); // ensures clean slate
 
     runStateChanged(STATE_RUN_STARTING, true);
-    sseUrl = url;
+    currentUrl = url;
     dotNetRef = dotNetReference;
-    reconnectAttempts = 0;
+
+    if (options) {
+        cfg.reconnectBaseDelayMs = options.reconnectBaseDelayMs ?? cfg.reconnectBaseDelayMs;
+        cfg.reconnectMaxDelayMs = options.reconnectMaxDelayMs ?? cfg.reconnectMaxDelayMs;
+        cfg.reconnectJitterMs = options.reconnectJitterMs ?? cfg.reconnectJitterMs;
+        cfg.useCredentials = !!options.useCredentials;
+    }
 
     connect();
 
@@ -89,6 +108,7 @@ function connectionStateChanged(newState, broadcast) {
 
 function connect() {
     if (!dotNetRef) return;
+    if (!currentUrl) return;
     if (runState !== STATE_RUN_STARTING && runState !== STATE_RUN_STARTED) return;
     if (connectionState !== STATE_CONNECTION_CLOSED && connectionState !== STATE_CONNECTION_REOPENING) return;
 
@@ -106,16 +126,18 @@ function connect() {
     }
 
     try {
-        eventSource = new EventSource(sseUrl);
+        eventSource = new EventSource(currentUrl, { withCredentials: cfg.useCredentials });
 
         eventSource.onopen = () => {
+            log('connection opened');
             connectionStateChanged(STATE_CONNECTION_OPEN, true);
             reconnectAttempts = 0;
         };
 
         eventSource.onerror = () => {
+            log('connection error');
             connectionStateChanged(STATE_CONNECTION_CLOSED, true);
-            console.warn('SSE error, scheduling reconnect...');
+
             scheduleReconnect();
         };
 
@@ -135,10 +157,11 @@ function connect() {
 function scheduleReconnect() {
     if (runState === STATE_RUN_STOPPED || reconnectTimer || !dotNetRef) return;
 
+    warn('scheduling reconnect...');
     connectionStateChanged(STATE_CONNECTION_REOPENING, true);
 
-    const delay = Math.min(BASE_DELAY_MS * (reconnectAttempts + 1), MAX_DELAY_MS);
-    const jitter = Math.floor(Math.random() * JITTER_MS);
+    const delay = Math.min(cfg.reconnectBaseDelayMs * (reconnectAttempts + 1), cfg.reconnectMaxDelayMs);
+    const jitter = Math.floor(Math.random() * cfg.reconnectJitterMs);
     const totalDelay = delay + jitter;
 
     reconnectTimer = setTimeout(() => {
@@ -161,7 +184,7 @@ export function stopSse() {
 
     if (eventSource) {
         try {
-           eventSource.close();
+            eventSource.close();
             connectionStateChanged(STATE_CONNECTION_CLOSED, true);
         } catch {
             /* ignore - already in the desired state */
@@ -182,7 +205,7 @@ export function stopSse() {
 
     reconnectAttempts = 0;
     dotNetRef = null;
-    sseUrl = null;
+    currentUrl = null;
 }
 
 function safeInvoke(method, ...args) {

@@ -1,17 +1,18 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.Extensions.DependencyInjection;
 
-using BlazorSseClient.Services;
 using BlazorSseClient.Wasm;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-// Configure HttpClient to connect to the api using service discovery
-builder.Services.AddSingleton<ISseClient, WasmSseClient>();
+builder.Services.AddWasmSseClient(options =>
+{
+    options.BaseAddress = builder.Configuration["Sse:BaseAddress"];
+    options.ReconnectBaseDelayMs = 1000;
+    options.ReconnectMaxDelayMs = 15000;
+    options.UseCredentials = false;
+    options.AutoStart = true;
+});
 
 var host = builder.Build();
-
-await host.Services.GetRequiredService<ISseClient>()
-    .StartAsync("https://localhost:7290/api/stream/messages");
 
 await host.RunAsync();
