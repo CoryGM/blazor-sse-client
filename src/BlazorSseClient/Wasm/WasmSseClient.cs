@@ -2,10 +2,12 @@
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
+using System;
+using System.Runtime.CompilerServices;
 
 namespace BlazorSseClient.Wasm;
 
-public sealed class WasmSseClient : ISseClient, IAsyncDisposable
+public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
 {
     private readonly IJSRuntime _js;
     private IJSObjectReference? _module;
@@ -154,8 +156,17 @@ public sealed class WasmSseClient : ISseClient, IAsyncDisposable
     {
         _runState = state;
 
-        //  Dispatch events based on state
-        Console.WriteLine($"Run state changed to {_runState}");
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await DispatchRunStateChangeAsync(SseClientSource.Wasm, state).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error dispatching Run State Change from WASM.");
+            }
+        });
     }
 
     private void DispatchConnectionStateChange(SseConnectionState state)
@@ -163,17 +174,33 @@ public sealed class WasmSseClient : ISseClient, IAsyncDisposable
         _connectionState = state == SseConnectionState.Reopened ? SseConnectionState.Open :
                                                                   state;
 
-        Console.WriteLine($"Connection state changed to {_connectionState}");
-        //  Dispatch events based on state
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await DispatchConnectionStateChangeAsync(SseClientSource.Wasm, state).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error dispatching Connection State Change from WASM.");
+            }
+        });
     }
 
-    private void DispatchOnMessage(SseEvent? sseMessage)
+    private void DispatchOnMessage(SseEvent sseEvent)
     {
-        Console.WriteLine($"Received SSE Message: {sseMessage?.EventType} - {sseMessage?.Data}");
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await DispatchOnMessageAsync(SseClientSource.Wasm, sseEvent).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error dispatching SSE message from WASM.");
+            }
+        });
     }
-
-    private void ThrowIfDisposed() =>
-        ObjectDisposedException.ThrowIf(_disposed, nameof(WasmSseClient));
 
     public async ValueTask DisposeAsync()
     {

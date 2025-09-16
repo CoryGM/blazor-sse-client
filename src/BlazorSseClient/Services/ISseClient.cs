@@ -1,7 +1,12 @@
+using System.Data;
+
 namespace BlazorSseClient.Services;
 
 public interface ISseClient : IAsyncDisposable
 {
+    SseRunState RunState { get; }
+    SseConnectionState ConnectionState { get; }
+
     Task StartAsync(string? url = null, bool restartOnDifferentUrl = true);
     Task StopAsync();
 
