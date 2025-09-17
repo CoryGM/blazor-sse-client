@@ -6,13 +6,12 @@ using BlazorSseClient.Services;
 
 namespace BlazorSseClient.Wasm;
 
-public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
+public sealed class WasmSseClient : SseClientBase, ISseClient
 {
     private readonly IJSRuntime _js;
     private IJSObjectReference? _module;
     private DotNetObjectReference<CallbackSink>? _objRef;
     private readonly CallbackSink _sink;
-    private readonly ILogger<WasmSseClient>? _logger;
     private SseRunState _runState = SseRunState.Stopped;
     private SseConnectionState _connectionState = SseConnectionState.Closed;
     private bool _disposed = false;
@@ -24,6 +23,7 @@ public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
     public SseConnectionState ConnectionState { get => _connectionState; }
 
     public WasmSseClient(IJSRuntime js, IOptions<WasmSseClientOptions>? options, ILogger<WasmSseClient>? logger = null)
+        : base(logger)
     {
         ArgumentNullException.ThrowIfNull(js, nameof(js));
 
@@ -31,7 +31,6 @@ public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
 
         _js = js;
         _baseAddress = options?.Value.BaseAddress;
-        _logger = logger;
         _sink = new CallbackSink(this, logger);
         _objRef = DotNetObjectReference.Create(_sink);
 
@@ -210,7 +209,7 @@ public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
         });
     }
 
-    public async ValueTask DisposeAsync()
+    public override async ValueTask DisposeAsync()
     {
         if (_disposed)
             return;
@@ -226,7 +225,7 @@ public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
 
         _disposed = true;
 
-        _logger?.LogTrace("SseClient disposed.");
+        await base.DisposeAsync().ConfigureAwait(false);
     }
 
     /// <summary>

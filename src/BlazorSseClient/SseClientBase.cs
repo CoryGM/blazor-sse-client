@@ -1,22 +1,129 @@
-﻿using BlazorSseClient.Services;
+﻿using System.Collections.Concurrent;
+
+using Microsoft.Extensions.Logging;
+
+using BlazorSseClient.Services;
 
 namespace BlazorSseClient
 {
-    public abstract class SseClientBase
+    public abstract class SseClientBase : IAsyncDisposable
     {
+        // SSE message registries
+        private readonly ConcurrentDictionary<string, SseEventCallbackBag> _byEventType =
+            new(StringComparer.OrdinalIgnoreCase);
+        private readonly SseEventCallbackBag _allEvents = new();
+        protected readonly ILogger? _logger;
+
+        protected SseClientBase(ILogger? logger = null)
+        {
+            _logger = logger;
+            _logger?.LogTrace("SseClient created.");
+        }
+
+        /// <summary>
+        /// Subscribe to all SSE messages with an async handler (Func)
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public Guid SubscribeAll(Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
+            => _allEvents.Add(handler, cancellationToken);
+
+        /// <summary>
+        /// Subscribe to all SSE messages with a synchronous handler (Action) instead of an async handler (Func)
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public Guid SubscribeAll(Action<SseEvent> handler, CancellationToken cancellationToken = default)
+            => _allEvents.Add(handler, cancellationToken);
+
+        /// <summary>
+        /// Unsubscribe from all events using the subscription ID returned when subscribing.
+        /// </summary>
+        /// <param name="id"></param>
+        public void UnsubscribeAll(Guid id) => _allEvents.Remove(id);
+
+        /// <summary>
+        /// Subscribe to a specific event type with an async handler (Func)
+        /// </summary>
+        /// <param name="eventType"></param>
+        /// <param name="handler"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public Guid Subscribe(string eventType, Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(eventType);
+            var bag = _byEventType.GetOrAdd(eventType, static _ => new SseEventCallbackBag());
+
+            return bag.Add(handler, cancellationToken);
+        }
+
+        /// <summary>
+        /// Subscribe with a synchronous handler (Action) instead of an async handler (Func)
+        /// </summary>
+        /// <param name="eventType"></param>
+        /// <param name="handler"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public Guid Subscribe(string eventType, Action<SseEvent> handler, CancellationToken cancellationToken = default)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(eventType);
+            var bag = _byEventType.GetOrAdd(eventType, static _ => new SseEventCallbackBag());
+
+            return bag.Add(handler, cancellationToken);
+        }
+
+        /// <summary>
+        /// Unsubscribe from a specific event type using the subscription ID returned when subscribing.
+        /// </summary>
+        /// <param name="eventType"></param>
+        /// <param name="id"></param>
+        public void Unsubscribe(string eventType, Guid id)
+        {
+            if (string.IsNullOrWhiteSpace(eventType)) return;
+            if (_byEventType.TryGetValue(eventType, out var bag))
+            {
+                bag.Remove(id);
+            }
+        }
+
+        /// <summary>
+        /// Remove all subscriptions bound to a specific instance target (if you have it)
+        /// </summary>
+        /// <param name="owner"></param>
+        public void UnsubscribeOwner(object owner)
+        {
+            if (owner is null) return;
+            foreach (var bag in _byEventType.Values)
+                bag.RemoveOwner(owner); // optional extension, not strictly needed
+
+            _allEvents.RemoveOwner(owner);
+        }
+
+        public virtual ValueTask DisposeAsync()
+        {
+            _byEventType.Clear();
+            _logger?.LogTrace("SseClient disposed.");
+
+            return ValueTask.CompletedTask;
+        }
+
         internal async Task DispatchOnMessageAsync(SseClientSource clientSource, SseEvent? sseMessage)
         {
-            Console.WriteLine($"Received SSE Message: {clientSource} - {sseMessage?.EventType} - {sseMessage?.Data}");
-        }
+            if (sseMessage is null) return;
 
-        internal async Task DispatchConnectionStateChangeAsync(SseClientSource clientSource, SseConnectionState state)
-        {
-            Console.WriteLine($"Connection State Changed: {clientSource} - {state}");
-        }
+            Console.WriteLine($"Received SSE Message: {clientSource} - {sseMessage.Value.EventType} - {sseMessage.Value.Data}");
 
-        internal async Task DispatchRunStateChangeAsync(SseClientSource clientSource, SseRunState state)
-        {
-            Console.WriteLine($"Run State Changed: {clientSource} - {state}");
+            var tasks = new List<Task>(2) { _allEvents.InvokeAsync(sseMessage.Value) };
+
+            if (!string.IsNullOrWhiteSpace(sseMessage.Value.EventType) &&
+                _byEventType.TryGetValue(sseMessage.Value.EventType, out var bag))
+            {
+                tasks.Add(bag.InvokeAsync(sseMessage.Value));
+            }
+
+            await Task.WhenAll(tasks).ConfigureAwait(false);
         }
     }
 }

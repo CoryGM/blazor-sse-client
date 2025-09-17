@@ -7,23 +7,21 @@ using BlazorSseClient.Services;
 
 namespace BlazorSseClient.Server
 {
-    public class ServerSseClient : SseClientBase, ISseClient, IAsyncDisposable
+    public class ServerSseClient : SseClientBase, ISseClient
     {
         private readonly ISseStreamClient _sseStreamClient;
-        private readonly ILogger<ServerSseClient> _logger;
         private string _currentUrl = string.Empty;
         private CancellationTokenSource? _cts;
         private Task? _listenTask;
         private SseRunState _runState = SseRunState.Stopped;
         private SseConnectionState _connectionState = SseConnectionState.Closed;
 
-        public ServerSseClient(ISseStreamClient sseStreamClient, ILogger<ServerSseClient> logger)
+        public ServerSseClient(ISseStreamClient sseStreamClient, ILogger<ServerSseClient>? logger)
+            : base(logger)
         {
             ArgumentNullException.ThrowIfNull(sseStreamClient, nameof(sseStreamClient));
-            ArgumentNullException.ThrowIfNull(logger, nameof(logger));
 
             _sseStreamClient = sseStreamClient;
-            _logger = logger;
         }
 
         public SseRunState RunState => _runState;
@@ -38,7 +36,7 @@ namespace BlazorSseClient.Server
             {
                 if (!restartOnDifferentUrl || string.Equals(url, _currentUrl, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger.LogDebug("SSE already started; ignoring StartAsync.");
+                    _logger?.LogDebug("SSE already started; ignoring StartAsync.");
 
                     return Task.CompletedTask;
                 }
@@ -46,9 +44,10 @@ namespace BlazorSseClient.Server
                 _ = StopAsync();
             }
 
-            _logger.LogInformation("Starting SSE listener for {Url}", url);
+            _logger?.LogInformation("Starting SSE listener for {Url}", url);
             _currentUrl = url;
             _cts = new CancellationTokenSource();
+
             ChangeRunState(SseRunState.Starting);
 
             _listenTask = Task.Run(() => ListenLoopAsync(url, _cts.Token));
@@ -62,7 +61,7 @@ namespace BlazorSseClient.Server
         {
             if (_runState != SseRunState.Started) return;
 
-            _logger.LogInformation("Stopping SSE listener.");
+            _logger?.LogInformation("Stopping SSE listener.");
 
             ChangeRunState(SseRunState.Stopping);
 
@@ -75,11 +74,11 @@ namespace BlazorSseClient.Server
                     var finished = await Task.WhenAny(_listenTask, Task.Delay(TimeSpan.FromSeconds(2))).ConfigureAwait(false);
                     
                     if (finished != _listenTask)
-                        _logger.LogWarning("SSE listen task did not complete within timeout.");
+                        _logger?.LogWarning("SSE listen task did not complete within timeout.");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogDebug(ex, "Error awaiting listen task.");
+                    _logger?.LogDebug(ex, "Error awaiting listen task.");
                 }
 
                 ChangeConnectionState(SseConnectionState.Closed);
@@ -92,7 +91,11 @@ namespace BlazorSseClient.Server
             ChangeRunState(SseRunState.Stopped);
         }
 
-        public async ValueTask DisposeAsync() => await StopAsync().ConfigureAwait(false);
+        public override async ValueTask DisposeAsync()
+        {
+            await StopAsync().ConfigureAwait(false);
+            await base.DisposeAsync().ConfigureAwait(false);
+        }
 
         private void ChangeRunState(SseRunState state)
         {
@@ -110,7 +113,7 @@ namespace BlazorSseClient.Server
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error dispatching Run State Change from server.");
+                    _logger?.LogError(ex, "Error dispatching Run State Change from server.");
                 }
             });
         }
@@ -134,7 +137,7 @@ namespace BlazorSseClient.Server
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error dispatching Connection State Change from server.");
+                    _logger?.LogError(ex, "Error dispatching Connection State Change from server.");
                 }
             });
         }
@@ -149,7 +152,7 @@ namespace BlazorSseClient.Server
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error dispatching SSE message from server.");
+                    _logger?.LogError(ex, "Error dispatching SSE message from server.");
                 }
             });
         }
@@ -188,17 +191,17 @@ namespace BlazorSseClient.Server
                     }
 
                     var sseEvent = new SseEvent { EventType = item.EventType, Data = item.Data, Id = eventId };
-                    _logger.LogDebug("SSE event received. Id={Id} Type={Type}", sseEvent.Id, sseEvent.EventType);
+                    _logger?.LogDebug("SSE event received. Id={Id} Type={Type}", sseEvent.Id, sseEvent.EventType);
                     DispatchOnMessage(sseEvent);
                 }
             }
             catch (OperationCanceledException)
             {
-                _logger.LogDebug("SSE listening cancelled.");
+                _logger?.LogDebug("SSE listening cancelled.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "SSE listening failed.");
+                _logger?.LogError(ex, "SSE listening failed.");
             }
         }
     }
