@@ -34,7 +34,7 @@ namespace BlazorSseClient.Demo.Api.SportsScores.Background
             {
                 var scoreUpdate = _service.GetRandomScore();
 
-                await _messageQueueService.EnqueueAsync(scoreUpdate).ConfigureAwait(false);
+                await _messageQueueService.PublishAsync(scoreUpdate).ConfigureAwait(false);
                 
                 _logger.LogInformation("Enqueued sports score update: {Message}", JsonSerializer.Serialize(scoreUpdate));
                 

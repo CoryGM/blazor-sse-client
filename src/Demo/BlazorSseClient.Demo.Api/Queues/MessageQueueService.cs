@@ -1,25 +1,20 @@
-﻿using System.Text.Json;
+﻿using System.Collections.Concurrent;
+using System.Runtime.CompilerServices;
+using System.Text.Json;
 using System.Threading.Channels;
 
 namespace BlazorSseClient.Demo.Api.Queues
 {
     public class MessageQueueService : IAsyncDisposable
     {
-        private readonly Channel<QueueMessage?> _channel;
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
+        private readonly ConcurrentDictionary<Guid, Channel<QueueMessage>> _subscribers = [];
 
         public MessageQueueService()
         {
-            // Bounded channel with a capacity of 100 messages
-            var options = new BoundedChannelOptions(100)
-            {
-                FullMode = BoundedChannelFullMode.DropOldest
-            };
-
-            _channel = Channel.CreateBounded<QueueMessage?>(options);
         }
 
-        public async ValueTask EnqueueAsync<T>(T message, CancellationToken cancellationToken = default)
+        public async ValueTask PublishAsync<T>(T message, CancellationToken cancellationToken = default)
         {
             if (message is null)
                 return;
@@ -31,30 +26,43 @@ namespace BlazorSseClient.Demo.Api.Queues
                 Payload = JsonSerializer.Serialize(message, _jsonOptions)
             };
 
-            await _channel.Writer.WriteAsync(queueMessage, cancellationToken).ConfigureAwait(false);
+            foreach (var channel in _subscribers.Values)
+                await channel.Writer.WriteAsync(queueMessage, cancellationToken).ConfigureAwait(false);
         }
 
-        /// <summary>
-        /// Await the next message (throws OperationCanceledException if cancelled).
-        /// </summary>
-        public ValueTask<QueueMessage?> DequeueAsync(CancellationToken cancellationToken) =>
-            _channel.Reader.ReadAsync(cancellationToken);
+        public async IAsyncEnumerable<QueueMessage> Subscribe([EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            var channel = Channel.CreateUnbounded<QueueMessage>(new UnboundedChannelOptions
+            {
+                SingleReader = true,
+                SingleWriter = false
+            });
+            var id = Guid.NewGuid();
 
-        /// <summary>
-        /// Stream all messages until completion or cancellation.
-        /// </summary>
-        public IAsyncEnumerable<QueueMessage?> ReadAllAsync(CancellationToken cancellationToken = default) =>
-            _channel.Reader.ReadAllAsync(cancellationToken);
+            _subscribers.TryAdd(id, channel);
 
-        /// <summary>
-        /// Signal no more messages will be written. Readers drain remaining items.
-        /// </summary>
-        public bool TryComplete(Exception? error = null) =>
-            _channel.Writer.TryComplete(error);
+            try
+            {
+                while (await channel.Reader.WaitToReadAsync(cancellationToken))
+                {
+                    while (channel.Reader.TryRead(out var message))
+                    {
+                        yield return message;
+                    }
+                }
+            }
+            finally
+            {
+                _subscribers.TryRemove(id, out _);
+                channel.Writer.TryComplete();
+            }
+        }
 
         public ValueTask DisposeAsync()
         {
-            TryComplete();
+            foreach (var channel in _subscribers.Values)
+                channel.Writer.TryComplete();
+
             return ValueTask.CompletedTask;
         }
     }

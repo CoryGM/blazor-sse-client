@@ -23,19 +23,13 @@ namespace BlazorSseClient.Demo.Api.Controllers
             Response.ContentType = "text/event-stream";
             Response.Headers.Append("Cache-Control", "no-cache");
 
-            while (!token.IsCancellationRequested)
+            await foreach (var message in _queue.Subscribe(token))
             {
-                var message = await _queue.DequeueAsync(token);
-
-                if (message is not null)
-                {
-                    await Response.WriteAsync($"id: {Guid.NewGuid()}\n\n", token);
-                    await Response.WriteAsync($"event: {message.Value.Type}\n\n", token);
-                    await Response.WriteAsync($"data: {message.Value.Payload}\n\n", token);
-                    await Response.Body.FlushAsync(token);
-                }
+                await Response.WriteAsync($"id: {Guid.NewGuid()}\n\n", token);
+                await Response.WriteAsync($"event: {message.Type}\n\n", token);
+                await Response.WriteAsync($"data: {message.Payload}\n\n", token);
+                await Response.Body.FlushAsync(token);
             }
         }
-
     }
 }

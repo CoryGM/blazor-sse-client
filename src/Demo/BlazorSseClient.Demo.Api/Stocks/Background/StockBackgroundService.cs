@@ -34,7 +34,7 @@ namespace BlazorSseClient.Demo.Api.Stock.Background
             {
                 var stockUpdate = _service.GetNextQuote();
 
-                await _messageQueueService.EnqueueAsync(stockUpdate).ConfigureAwait(false);
+                await _messageQueueService.PublishAsync(stockUpdate).ConfigureAwait(false);
                 
                 _logger.LogInformation("Enqueued stock update: {Message}", JsonSerializer.Serialize(stockUpdate));
                 
