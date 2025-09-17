@@ -1,5 +1,3 @@
-using System.Data;
-
 namespace BlazorSseClient.Services;
 
 public interface ISseClient : IAsyncDisposable

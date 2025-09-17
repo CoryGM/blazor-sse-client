@@ -1,9 +1,8 @@
-﻿using BlazorSseClient.Services;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.JSInterop;
-using System;
-using System.Runtime.CompilerServices;
+
+using BlazorSseClient.Services;
 
 namespace BlazorSseClient.Wasm;
 
@@ -53,7 +52,10 @@ public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
     /// <returns></returns>
     public async Task StartAsync(string? url, bool restartOnDifferentUrl = true)
     {
-        var effectiveUrl = GetEffectiveUrl(url);    
+        var effectiveUrl = GetEffectiveUrl(url);
+
+        if (String.IsNullOrWhiteSpace(effectiveUrl))
+            throw new ArgumentException("URL is required.", nameof(url));
 
         if (_runState == SseRunState.Started)
         {
@@ -156,6 +158,8 @@ public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
     {
         _runState = state;
 
+        _logger?.LogDebug("WASM SSE run state: {State}", RunState);
+
         _ = Task.Run(async () =>
         {
             try
@@ -174,6 +178,8 @@ public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
         _connectionState = state == SseConnectionState.Reopened ? SseConnectionState.Open :
                                                                   state;
 
+        _logger?.LogDebug("WASM SSE connection state: {State}", ConnectionState);
+
         _ = Task.Run(async () =>
         {
             try
@@ -189,6 +195,8 @@ public sealed class WasmSseClient : SseClientBase, ISseClient, IAsyncDisposable
 
     private void DispatchOnMessage(SseEvent sseEvent)
     {
+        _logger?.LogInformation("WASM SSE message: Id={Id} Type={Type}", sseEvent.Id, sseEvent.EventType);
+
         _ = Task.Run(async () =>
         {
             try

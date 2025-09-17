@@ -4,6 +4,8 @@ using BlazorSseClient.Wasm;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
+
 builder.Services.AddWasmSseClient(options =>
 {
     options.BaseAddress = builder.Configuration["Sse:BaseAddress"];

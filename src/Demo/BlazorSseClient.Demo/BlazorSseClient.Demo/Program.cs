@@ -1,9 +1,11 @@
-﻿using BlazorSseClient.Demo.Client.Pages;
-using BlazorSseClient.Demo.Components;
+﻿using BlazorSseClient.Demo.Components;
 using BlazorSseClient.Server;
-using BlazorSseClient.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.SetMinimumLevel(LogLevel.Debug);
 
 builder.AddServiceDefaults();
 

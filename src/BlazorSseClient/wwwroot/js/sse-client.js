@@ -8,7 +8,8 @@ let cfg = {
     reconnectBaseDelayMs: 1000,
     reconnectMaxDelayMs: 10000,
     reconnectJitterMs: 500,
-    useCredentials: false
+    useCredentials: false,
+    debug: false
 };
 
 const STATE_RUN_CHANGE_METHOD = 'OnSseRunStateChange';
@@ -25,14 +26,16 @@ const STATE_CONNECTION_UNKNOWN = 0;
 const STATE_CONNECTION_OPENING = 1;
 const STATE_CONNECTION_OPEN = 2;
 const STATE_CONNECTION_REOPENING = 3;
-const STATE_CONNECTION_REOPENED = 4;    //  Not actually a state, just a notification. Reopened goes to Opened.
+const STATE_CONNECTION_REOPENED = 4;    // Not a state; notification only.
 const STATE_CONNECTION_CLOSED = 5;
 
 let runState = STATE_RUN_STOPPED;
 let connectionState = STATE_CONNECTION_CLOSED;
 
 function log(...args) {
-    console.debug("[SSE]", ...args);
+    if (cfg.debug) {
+        console.debug("[SSE]", ...args);
+    }
 }
 
 function warn(...args) {
@@ -106,21 +109,36 @@ function connectionStateChanged(newState, broadcast) {
     }
 }
 
+function cleanupEventSource() {
+    if (!eventSource) return;
+
+    try {
+        // Detach handlers to help GC and avoid stray callbacks
+        eventSource.onopen = null;
+        eventSource.onerror = null;
+        eventSource.onmessage = null;
+        eventSource.close();
+    } catch {
+        // ignore
+    } finally {
+        eventSource = null;
+    }
+}
+
 function connect() {
     if (!dotNetRef) return;
     if (!currentUrl) return;
     if (runState !== STATE_RUN_STARTING && runState !== STATE_RUN_STARTED) return;
     if (connectionState !== STATE_CONNECTION_CLOSED && connectionState !== STATE_CONNECTION_REOPENING) return;
 
+    // Ensure we never have two concurrent EventSource instances
+    cleanupEventSource();
+
     if (reconnectAttempts === 0) {
         connectionStateChanged(STATE_CONNECTION_OPENING, true);
     }
 
-    // This is set to 1 because we only want to a single "reopening" event,
-    // even if we have multiple reconnect attempts. The purpose of the state
-    // change is to notify the app that the connection was lost, and is now
-    // being re-established. We don't need to notifiy it again on subsequent
-    // attempts.
+    // Announce a single "reopening" per outage
     if (reconnectAttempts === 1) {
         connectionStateChanged(STATE_CONNECTION_REOPENING, true);
     }
@@ -136,11 +154,17 @@ function connect() {
 
         eventSource.onerror = () => {
             log('connection error');
+
+            // Move to closed and take over reconnection logic (disable native auto-retry)
             connectionStateChanged(STATE_CONNECTION_CLOSED, true);
+
+            // Explicitly stop the browser's auto-reconnect to avoid overlapping connections
+            cleanupEventSource();
 
             scheduleReconnect();
         };
 
+        // Default SSE messages
         eventSource.onmessage = e => {
             const type = e.type || 'message';
             const data = e.data;
@@ -150,6 +174,7 @@ function connect() {
         };
     } catch (err) {
         console.error('SSE connection setup failed:', err);
+        cleanupEventSource();
         scheduleReconnect();
     }
 }
@@ -170,11 +195,13 @@ function scheduleReconnect() {
         if (runState === STATE_RUN_STOPPED || !dotNetRef) return;
 
         reconnectAttempts++;
-
+        log(`Reconnect attempt #${reconnectAttempts} starting`);
         connect();
     }, totalDelay);
 
-    console.info(`Reconnect attempt #${reconnectAttempts + 1} scheduled in ${totalDelay}ms`);
+    if (cfg.debug) {
+        console.info(`Reconnect attempt #${reconnectAttempts + 1} scheduled in ${totalDelay}ms`);
+    }
 }
 
 export function stopSse() {
@@ -182,28 +209,25 @@ export function stopSse() {
 
     runStateChanged(STATE_RUN_STOPPING, true);
 
-    if (eventSource) {
-        try {
-            eventSource.close();
-            connectionStateChanged(STATE_CONNECTION_CLOSED, true);
-        } catch {
-            /* ignore - already in the desired state */
-            connectionStateChanged(STATE_CONNECTION_CLOSED, false);
-        }
-
-        eventSource = null;
-    }
-
+    // Stop reconnect attempts
     if (reconnectTimer) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
     }
 
-    if (dotNetRef) {
-        runStateChanged(STATE_RUN_STOPPED, true);
-    }
+    // Close the current EventSource (and detach handlers)
+    cleanupEventSource();
+
+    // Update connection state
+    connectionStateChanged(STATE_CONNECTION_CLOSED, true);
+
+    // Always move to STOPPED internally; only broadcast if there's a .NET listener
+    const canBroadcast = !!dotNetRef;
+    runStateChanged(STATE_RUN_STOPPED, canBroadcast);
 
     reconnectAttempts = 0;
+
+    // Release the .NET ref last
     dotNetRef = null;
     currentUrl = null;
 }
@@ -215,6 +239,8 @@ function safeInvoke(method, ...args) {
         }
     } catch (e) {
         // Swallow; invoking after dispose can throw.
-        console.debug(`Invoke ${method} suppressed:`, e);
+        if (cfg.debug) {
+            console.debug(`Invoke ${method} suppressed:`, e);
+        }
     }
 }
