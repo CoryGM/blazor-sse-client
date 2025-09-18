@@ -11,13 +11,23 @@ namespace BlazorSseClient.Demo.Components.Weather
 
         private readonly List<WeatherModel> readings = [];
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
+        private Guid? _weatherSubscriptionId;
+        private System.Timers.Timer? _timer;
+
+        protected override void OnInitialized()
+        {
+            _timer = new System.Timers.Timer(1000);
+            _timer.Elapsed += (sender, e) => InvokeAsync(StateHasChanged);
+            _timer.AutoReset = true;
+            _timer.Enabled = true;
+        }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)
             {
                 readings.Clear(); // Optional: clear any server-side data
-                var index = SseClient.Subscribe("Weather", AddReading);
+                _weatherSubscriptionId = SseClient.Subscribe("Weather", AddReading);
             }
         }
 
@@ -43,6 +53,9 @@ namespace BlazorSseClient.Demo.Components.Weather
                     return;
                 }
 
+                var existingReading = readings.Find(r => r.City == currentWeather.Value.City);
+                var readingsCount = existingReading?.ReadingsCount + 1 ?? 1;
+
                 readings.RemoveAll(r => r.City == currentWeather.Value.City);
 
                 foreach (var reading in readings)
@@ -61,7 +74,8 @@ namespace BlazorSseClient.Demo.Components.Weather
                     WindDirection = currentWeather?.WindDirection ?? "N/A",
                     WindGusts = currentWeather?.WindGusts ?? "N/A",
                     Precipitation = currentWeather?.Precipitation ?? "N/A",
-                    IsLastReported = true
+                    IsLastReported = true,
+                    ReadingsCount = readingsCount
                 });
 
                 readings.Sort((a, b) => string.Compare(a.City, b.City, StringComparison.OrdinalIgnoreCase));
@@ -80,6 +94,15 @@ namespace BlazorSseClient.Demo.Components.Weather
 
         public async ValueTask DisposeAsync()
         {
+            _timer?.Stop();
+            _timer?.Dispose();
+
+            if (_weatherSubscriptionId.HasValue)
+            {
+                SseClient.Unsubscribe("Weather", _weatherSubscriptionId.Value);
+                _weatherSubscriptionId = null;
+            }
+
             Console.WriteLine("Weather component is being disposed (async).");
         }
     }
