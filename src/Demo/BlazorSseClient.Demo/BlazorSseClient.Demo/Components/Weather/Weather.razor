@@ -1,0 +1,61 @@
+﻿@page "/weather"
+
+@rendermode InteractiveServer
+
+@namespace BlazorSseClient.Demo.Components.Weather
+
+<PageTitle>Weather</PageTitle>
+
+<h1>Weather - Server Rendered</h1>
+
+<p>Cities Reporting: @readings.Count</p>
+
+@if (readings == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>City</th>
+                <td></td>
+                <th>Temp (F)</th>
+                <th>Humidity</th>
+                <th>Wind</th>
+                <th>Prescip</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var reading in readings)
+            {
+                <tr class="@(reading.IsLastReported ? "table-success" : null)">
+                    <td>
+                        @if (reading.IsLastReported)
+                        {
+                            <i class="bi bi-caret-right-fill text-success"></i>
+                        }
+                    </td>
+                    <td>@reading.City</td>
+                    <td>@if (reading.IsDayTime)
+                        {
+                            <i class="bi bi-brightness-high text-warning"></i>
+                        } 
+                        else
+                        {
+                            <i class="bi bi-moon"></i>
+                        }
+                    </td>
+                            <td>@reading.Temperature / @reading.ApparentTemperature</td>
+                    <td>@reading.RelativeHumidity</td>
+                    <td>@reading.WindSpeed (@reading.WindGusts) @reading.WindDirection</td>
+                    <td>@reading.Precipitation</td>
+                    <td>@reading.ReportedAgo</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

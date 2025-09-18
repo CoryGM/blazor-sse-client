@@ -1,8 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-using BlazorSseClient.Services;
-
 namespace BlazorSseClient.Wasm
 {
     public static class WasmSseServiceCollectionExtensions

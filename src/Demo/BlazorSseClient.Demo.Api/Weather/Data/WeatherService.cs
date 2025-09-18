@@ -46,13 +46,13 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                 City = location.Name,
                 Latitude = location.Latitude,
                 Longitude = location.Longitude,
-                Temperature = $"{weatherResponse.Current.Temperature2m} {weatherResponse.Units.Temperature2m}",
-                RelativeHumidity = $"{weatherResponse.Current.RelativeHumidity2m} {weatherResponse.Units.RelativeHumidity2m}",
-                ApparentTemperature = $"{weatherResponse.Current.ApparentTemperature} {weatherResponse.Units.ApparentTemperature}",
+                Temperature = $"{weatherResponse.Current.Temperature2m}{weatherResponse.Units.Temperature2m}",
+                RelativeHumidity = $"{weatherResponse.Current.RelativeHumidity2m}{weatherResponse.Units.RelativeHumidity2m}",
+                ApparentTemperature = $"{weatherResponse.Current.ApparentTemperature}{weatherResponse.Units.ApparentTemperature}",
                 IsDayTime = weatherResponse.Current.IsDay,
-                WindSpeed = $"{weatherResponse.Current.WindSpeed10m} {weatherResponse.Units.WindSpeed10m}",
+                WindSpeed = $"{weatherResponse.Current.WindSpeed10m}{weatherResponse.Units.WindSpeed10m}",
                 WindDirection = $"{weatherResponse.Current.WindDirection10m}° {GetWindDirection(weatherResponse.Current.WindDirection10m)}",
-                WindGusts = $"{weatherResponse.Current.WindGusts10m} {weatherResponse.Units.WindGusts10m}",
+                WindGusts = $"{weatherResponse.Current.WindGusts10m}{weatherResponse.Units.WindGusts10m}",
                 Precipitation = $"{weatherResponse.Current.Precipitation} {weatherResponse.Units.Precipitation}"
             };
         }

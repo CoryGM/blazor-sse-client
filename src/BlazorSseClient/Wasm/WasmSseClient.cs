@@ -163,7 +163,7 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
         {
             try
             {
-                await DispatchRunStateChangeAsync(SseClientSource.Wasm, state).ConfigureAwait(false);
+                //await DispatchRunStateChangeAsync(SseClientSource.Wasm, state).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -183,7 +183,7 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
         {
             try
             {
-                await DispatchConnectionStateChangeAsync(SseClientSource.Wasm, state).ConfigureAwait(false);
+                //await DispatchConnectionStateChangeAsync(SseClientSource.Wasm, state).ConfigureAwait(false);
             }
             catch (Exception ex)
             {

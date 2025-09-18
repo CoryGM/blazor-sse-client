@@ -4,8 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 
-using BlazorSseClient.Services;
-
 namespace BlazorSseClient.Server;
 
 public static class ServerSseServiceCollectionExtensions

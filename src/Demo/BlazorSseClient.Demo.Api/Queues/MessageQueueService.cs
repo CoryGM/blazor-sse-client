@@ -16,12 +16,18 @@ namespace BlazorSseClient.Demo.Api.Queues
 
         public async ValueTask PublishAsync<T>(T message, CancellationToken cancellationToken = default)
         {
+            var messageType = typeof(T).Name;
+            await PublishAsync(messageType, message, cancellationToken).ConfigureAwait(false);
+        }
+
+        public async ValueTask PublishAsync<T>(string messageType, T message, CancellationToken cancellationToken = default)
+        {
             if (message is null)
                 return;
 
             var queueMessage = new QueueMessage
             {
-                Type = typeof(T).Name,
+                Type = messageType,
                 Version = 1,
                 Payload = JsonSerializer.Serialize(message, _jsonOptions)
             };

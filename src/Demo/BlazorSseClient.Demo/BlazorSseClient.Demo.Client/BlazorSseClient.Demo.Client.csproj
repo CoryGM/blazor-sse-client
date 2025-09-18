@@ -9,12 +9,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Weather\**" />
+    <Content Remove="Weather\**" />
+    <EmbeddedResource Remove="Weather\**" />
+    <None Remove="Weather\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.9" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="SportsScores\" />
-    <Folder Include="Weather\" />
     <Folder Include="Stocks\" />
   </ItemGroup>
 
