@@ -13,6 +13,7 @@ namespace BlazorSseClient.Demo.Components.Weather
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
         private Guid? _weatherSubscriptionId;
         private System.Timers.Timer? _timer;
+        private string renderLocation = "Server";
 
         protected override void OnInitialized()
         {
@@ -20,6 +21,11 @@ namespace BlazorSseClient.Demo.Components.Weather
             _timer.Elapsed += (sender, e) => InvokeAsync(StateHasChanged);
             _timer.AutoReset = true;
             _timer.Enabled = true;
+
+            if (OperatingSystem.IsBrowser())
+                renderLocation = "Browser";
+            else
+                renderLocation = "Server";
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -35,10 +41,12 @@ namespace BlazorSseClient.Demo.Components.Weather
         {
             if (OperatingSystem.IsBrowser())
             {
+                renderLocation = "Browser";
                 Console.WriteLine($"AddReading() executing in Browser.");
             }
             else
             {
+                renderLocation = "Server";
                 Console.WriteLine($"AddReading() executing on Server.");
             }
 
