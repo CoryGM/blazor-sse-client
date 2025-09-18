@@ -90,6 +90,20 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
         await _module.InvokeVoidAsync("startSse", _currentUrl, _objRef, payload).ConfigureAwait(false);
     }
 
+    public override Guid Subscribe(string eventType, Action<SseEvent> handler, CancellationToken cancellationToken = default)
+    {
+        _ = (_module?.InvokeVoidAsync("subscribeSseEvent", eventType));
+         
+        return base.Subscribe(eventType, handler, cancellationToken);
+    }
+
+    public override Guid Subscribe(string eventType, Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
+    {
+        _ = (_module?.InvokeVoidAsync("subscribeSseEvent", eventType));
+
+        return base.Subscribe(eventType, handler, cancellationToken);
+    }
+
     /// <summary>
     /// Stops the client from listening for events from the server.
     /// </summary>

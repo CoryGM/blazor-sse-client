@@ -1,0 +1,16 @@
+﻿@page "/stocks"
+
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Stocks</PageTitle>
+
+
+<h3>Stocks</h3>
+
+@if (_symbols.Any())
+{
+    foreach (var symbol in _symbols)
+    {
+        <TickerDetail Symbol="@symbol.Key" Quotes="@symbol.Value" />
+    }
+}

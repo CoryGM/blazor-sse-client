@@ -12,6 +12,7 @@ namespace BlazorSseClient.Demo.Components.Weather
         private readonly List<WeatherModel> readings = [];
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
         private Guid? _weatherSubscriptionId;
+        private const string _messageType = "Weather";
         private System.Timers.Timer? _timer;
         private string renderLocation = "Server";
 
@@ -33,7 +34,7 @@ namespace BlazorSseClient.Demo.Components.Weather
             if (firstRender)
             {
                 readings.Clear(); // Optional: clear any server-side data
-                _weatherSubscriptionId = SseClient.Subscribe("Weather", AddReading);
+                _weatherSubscriptionId = SseClient.Subscribe(_messageType, AddReading);
             }
         }
 
@@ -107,7 +108,7 @@ namespace BlazorSseClient.Demo.Components.Weather
 
             if (_weatherSubscriptionId.HasValue)
             {
-                SseClient.Unsubscribe("Weather", _weatherSubscriptionId.Value);
+                SseClient.Unsubscribe(_messageType, _weatherSubscriptionId.Value);
                 _weatherSubscriptionId = null;
             }
 

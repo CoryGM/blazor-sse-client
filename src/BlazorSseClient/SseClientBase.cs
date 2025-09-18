@@ -51,7 +51,7 @@ namespace BlazorSseClient
         /// <param name="handler"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public Guid Subscribe(string eventType, Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
+        public virtual Guid Subscribe(string eventType, Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrEmpty(eventType);
             var bag = _byEventType.GetOrAdd(eventType, static _ => new SseEventCallbackBag());
@@ -66,7 +66,7 @@ namespace BlazorSseClient
         /// <param name="handler"></param>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public Guid Subscribe(string eventType, Action<SseEvent> handler, CancellationToken cancellationToken = default)
+        public virtual Guid Subscribe(string eventType, Action<SseEvent> handler, CancellationToken cancellationToken = default)
         {
             ArgumentException.ThrowIfNullOrEmpty(eventType);
             var bag = _byEventType.GetOrAdd(eventType, static _ => new SseEventCallbackBag());

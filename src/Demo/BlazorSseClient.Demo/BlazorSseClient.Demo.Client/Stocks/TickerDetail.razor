@@ -1,0 +1,10 @@
+﻿<h3>@Symbol</h3>
+
+@if (Quotes is not null && Quotes.Any())
+{
+    foreach (var quote in Quotes)
+    {
+        @quote.Price    
+    }
+}
+

@@ -7,8 +7,7 @@
         private string[] stockSymbols = 
         [
             "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA",
-            "FB", "NVDA", "JPM", "V", "DIS",
-            "NFLX", "ADBE", "PYPL", "INTC", "CSCO"
+            "FB", "NVDA", "DIS"
         ];
 
         /// <summary>

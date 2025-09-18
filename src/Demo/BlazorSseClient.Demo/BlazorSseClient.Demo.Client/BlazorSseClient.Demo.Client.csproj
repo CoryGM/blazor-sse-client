@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <Folder Include="SportsScores\" />
-    <Folder Include="Stocks\" />
   </ItemGroup>
 
   <ItemGroup>
