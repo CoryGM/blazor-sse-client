@@ -5,12 +5,15 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
     public class WeatherService : IWeatherService
     {
         private readonly IHttpClientFactory _httpClientFactory;
+        private readonly ILogger<WeatherService> _logger;
 
-        public WeatherService(IHttpClientFactory httpClientFactory)
+        public WeatherService(IHttpClientFactory httpClientFactory, ILogger<WeatherService> logger)
         {
             ArgumentNullException.ThrowIfNull(httpClientFactory, nameof(httpClientFactory));
+            ArgumentNullException.ThrowIfNull(logger, nameof(logger));
 
             _httpClientFactory = httpClientFactory;
+            _logger = logger;
         }
 
         public async Task<CurrentWeather?> GetRandomCurrentWeatherAsync(CancellationToken cancellationToken = default)
@@ -31,30 +34,38 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                 "&temperature_unit=fahrenheit" +
                 "&precipitation_unit=inch";
             
-            var response = await httpClient.GetAsync(url, cancellationToken);
-
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var weatherResponse = await response.Content.ReadFromJsonAsync<Reading>(cancellationToken: cancellationToken);
-
-            if (weatherResponse == null)
-                return null;
-
-            return new CurrentWeather
+            try
             {
-                City = location.Name,
-                Latitude = location.Latitude,
-                Longitude = location.Longitude,
-                Temperature = $"{weatherResponse.Current.Temperature2m}{weatherResponse.Units.Temperature2m}",
-                RelativeHumidity = $"{weatherResponse.Current.RelativeHumidity2m}{weatherResponse.Units.RelativeHumidity2m}",
-                ApparentTemperature = $"{weatherResponse.Current.ApparentTemperature}{weatherResponse.Units.ApparentTemperature}",
-                IsDayTime = weatherResponse.Current.IsDay,
-                WindSpeed = $"{weatherResponse.Current.WindSpeed10m}{weatherResponse.Units.WindSpeed10m}",
-                WindDirection = $"{weatherResponse.Current.WindDirection10m}° {GetWindDirection(weatherResponse.Current.WindDirection10m)}",
-                WindGusts = $"{weatherResponse.Current.WindGusts10m}{weatherResponse.Units.WindGusts10m}",
-                Precipitation = $"{weatherResponse.Current.Precipitation} {weatherResponse.Units.Precipitation}"
-            };
+                var response = await httpClient.GetAsync(url, cancellationToken);
+
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var weatherResponse = await response.Content.ReadFromJsonAsync<Reading>(cancellationToken: cancellationToken);
+
+                if (weatherResponse == null)
+                    return null;
+
+                return new CurrentWeather
+                {
+                    City = location.Name,
+                    Latitude = location.Latitude,
+                    Longitude = location.Longitude,
+                    Temperature = $"{weatherResponse.Current.Temperature2m}{weatherResponse.Units.Temperature2m}",
+                    RelativeHumidity = $"{weatherResponse.Current.RelativeHumidity2m}{weatherResponse.Units.RelativeHumidity2m}",
+                    ApparentTemperature = $"{weatherResponse.Current.ApparentTemperature}{weatherResponse.Units.ApparentTemperature}",
+                    IsDayTime = weatherResponse.Current.IsDay,
+                    WindSpeed = $"{weatherResponse.Current.WindSpeed10m}{weatherResponse.Units.WindSpeed10m}",
+                    WindDirection = $"{weatherResponse.Current.WindDirection10m}° {GetWindDirection(weatherResponse.Current.WindDirection10m)}",
+                    WindGusts = $"{weatherResponse.Current.WindGusts10m}{weatherResponse.Units.WindGusts10m}",
+                    Precipitation = $"{weatherResponse.Current.Precipitation} {weatherResponse.Units.Precipitation}"
+                };
+            }
+            catch (Exception exception)
+            {
+                _logger.LogError(exception, "Error fetching weather data for {City}", location.Name);
+                return null;
+            }
         }
 
         private static string GetWindDirection(double degrees)
