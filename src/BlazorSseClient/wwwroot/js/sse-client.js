@@ -44,6 +44,13 @@ function warn(...args) {
     }
 }
 
+// Subscriptions map: messageType => listener function
+const subscriptions = new Map();
+
+// Focus/visibility handlers so we can remove them later
+let _onVisibilityChange = null;
+let _onWindowBlur = null;
+
 export function startSse(url, dotNetReference, options) {
     stopSse(); // ensures clean slate
 
@@ -68,7 +75,19 @@ export function getRunState() {
 }
 
 export function getConnectionState() {
-    return connectionState;
+    if (!eventSource)
+        return STATE_CONNECTION_CLOSED;
+
+    if (eventSource.readyState === 0)
+        return STATE_CONNECTION_OPENING;
+
+    if (eventSource.readyState === 1)
+        return STATE_CONNECTION_OPEN;
+
+    if (eventSource.readyState === 2)
+        return STATE_CONNECTION_CLOSED;
+
+    return STATE_CONNECTION_UNKNOWN;
 }
 
 function runStateChanged(newState, broadcast) {
@@ -109,10 +128,103 @@ function connectionStateChanged(newState, broadcast) {
     }
 }
 
+function attachAllSubscriptions() {
+    if (!eventSource) return;
+
+    for (const [messageType, listener] of subscriptions.entries()) {
+        try {
+            eventSource.addEventListener(messageType, listener);
+        } catch (e) {
+            if (cfg.debug) console.debug(`Failed to attach listener for "${messageType}":`, e);
+        }
+    }
+}
+
+function detachAllSubscriptions() {
+    if (!eventSource) return;
+
+    for (const [messageType, listener] of subscriptions.entries()) {
+        try {
+            eventSource.removeEventListener(messageType, listener);
+        } catch (e) {
+            // ignore
+        }
+    }
+}
+
+/*
+ Exports for dynamic subscription management:
+ - subscribe(messageType): begin listening for server-sent events with this event name.
+ - unsubscribe(messageType): stop listening for that event.
+ - clearSubscriptions(): remove all subscriptions (detaches listeners and clears internal map).
+ Note: Subscriptions persist across focus/visibility changes (no automatic cleanup).
+*/
+export function subscribe(messageType) {
+    if (!messageType) return;
+
+    // Avoid duplicates
+    if (subscriptions.has(messageType)) return;
+
+    const listenerName = messageType;
+
+    const listener = function(e) {
+        // Use the subscription's messageType rather than relying on e.type
+        const listenerName = messageType;
+        const data = e.data;
+        const id = e.lastEventId || null;
+
+        safeInvoke('OnSseMessage', listenerName, data, id);
+    };
+
+    subscriptions.set(messageType, listener);
+
+    if (eventSource) {
+        try {
+            eventSource.addEventListener(listenerName, listener);
+        } catch (e) {
+            if (cfg.debug) console.debug(`subscribe: failed to addEventListener "${messageType}":`, e);
+        }
+    }
+}
+
+export function unsubscribe(messageType) {
+    if (!messageType) return;
+
+    const listener = subscriptions.get(messageType);
+
+    if (!listener) return;
+
+    const listenerName = messageType;
+
+    if (eventSource) {
+        try {
+            eventSource.removeEventListener(listenerName, listener);
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    subscriptions.delete(messageType);
+}
+
+export function clearSubscriptions() {
+    // Detach listeners from the active EventSource if present, then clear the map.
+    try {
+        detachAllSubscriptions();
+    } catch {
+        // ignore
+    } finally {
+        subscriptions.clear();
+    }
+}
+
 function cleanupEventSource() {
     if (!eventSource) return;
 
     try {
+        // Detach named event listeners added via addEventListener
+        detachAllSubscriptions();
+
         // Detach handlers to help GC and avoid stray callbacks
         eventSource.onopen = null;
         eventSource.onerror = null;
@@ -146,11 +258,24 @@ function connect() {
     try {
         eventSource = new EventSource(currentUrl, { withCredentials: cfg.useCredentials });
 
+        // Attach any previously registered subscriptions immediately so dynamic subscriptions work post-connect.
+        attachAllSubscriptions();
+
         eventSource.onopen = () => {
             log('connection opened');
+
             connectionStateChanged(STATE_CONNECTION_OPEN, true);
+
             reconnectAttempts = 0;
         };
+
+        eventSource.addEventListener('Quote', (e) => {
+            const type = 'Quote';
+            const data = e.data;
+            const id = e.lastEventId || null;
+            log('Quote event received:', data);
+            safeInvoke('OnSseMessage', type, data, id);
+        });
 
         eventSource.onerror = () => {
             log('connection error');
@@ -164,14 +289,14 @@ function connect() {
             scheduleReconnect();
         };
 
-        // Default SSE messages
-        eventSource.onmessage = e => {
-            const type = e.type || 'message';
-            const data = e.data;
-            const id = e.lastEventId || null;
+        //// Default SSE messages
+        //eventSource.onmessage = e => {
+        //    const type = e.type || 'message';
+        //    const data = e.data;
+        //    const id = e.lastEventId || null;
 
-            safeInvoke('OnSseMessage', type, data, id);
-        };
+        //    safeInvoke('OnSseMessage', type, data, id);
+        //};
     } catch (err) {
         console.error('SSE connection setup failed:', err);
         cleanupEventSource();

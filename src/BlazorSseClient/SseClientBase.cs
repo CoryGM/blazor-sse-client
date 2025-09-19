@@ -79,7 +79,7 @@ namespace BlazorSseClient
         /// </summary>
         /// <param name="eventType"></param>
         /// <param name="id"></param>
-        public void Unsubscribe(string eventType, Guid id)
+        public virtual void Unsubscribe(string eventType, Guid id)
         {
             if (string.IsNullOrWhiteSpace(eventType)) return;
             if (_byEventType.TryGetValue(eventType, out var bag))

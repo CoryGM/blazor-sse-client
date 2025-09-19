@@ -92,16 +92,23 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
 
     public override Guid Subscribe(string eventType, Action<SseEvent> handler, CancellationToken cancellationToken = default)
     {
-        _ = (_module?.InvokeVoidAsync("subscribeSseEvent", eventType));
+        _ = (_module?.InvokeVoidAsync("subscribe", eventType));
          
         return base.Subscribe(eventType, handler, cancellationToken);
     }
 
     public override Guid Subscribe(string eventType, Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
     {
-        _ = (_module?.InvokeVoidAsync("subscribeSseEvent", eventType));
+        _ = (_module?.InvokeVoidAsync("subscribe", eventType));
 
         return base.Subscribe(eventType, handler, cancellationToken);
+    }
+
+    public override void Unsubscribe(string eventType, Guid id)
+    { 
+        _ = (_module?.InvokeVoidAsync("unsubscribe", eventType));
+
+        base.Unsubscribe(eventType, id);
     }
 
     /// <summary>
