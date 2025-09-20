@@ -10,6 +10,10 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
 {
     private readonly IJSRuntime _js;
     private IJSObjectReference? _module;
+    private Task<IJSObjectReference?>? _moduleTask;
+    private readonly object _moduleLock = new();
+    private readonly HashSet<string> _pendingSubscriptions = new(StringComparer.OrdinalIgnoreCase);
+
     private DotNetObjectReference<CallbackSink>? _objRef;
     private readonly CallbackSink _sink;
     private SseRunState _runState = SseRunState.Stopped;
@@ -34,9 +38,14 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
         _sink = new CallbackSink(this, logger);
         _objRef = DotNetObjectReference.Create(_sink);
 
-        _logger?.LogTrace("WasmSseClient constructed. Default Url: {BaseAddress}; AutoStart: {AutoStart}", 
+        _logger?.LogTrace("WasmSseClient constructed. Default Url: {BaseAddress}; AutoStart: {AutoStart}",
             _baseAddress ?? "None", options?.Value.AutoStart);
 
+        // Start module load immediately (do not block constructor).
+        // Subscribers / starters will await or enqueue as needed.
+        _moduleTask = EnsureModuleLoadedAsync();
+
+        // If AutoStart is requested, kick off StartAsync in background. StartAsync will await the module task.
         if (options?.Value.AutoStart == true && !String.IsNullOrWhiteSpace(_baseAddress))
         {
             _ = StartAsync(_baseAddress!, false);
@@ -51,6 +60,9 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
     /// <returns></returns>
     public async Task StartAsync(string? url, bool restartOnDifferentUrl = true)
     {
+        // Ensure module is loaded before invoking startSse.
+        await EnsureModuleLoadedAsync().ConfigureAwait(false);
+
         var effectiveUrl = GetEffectiveUrl(url);
 
         if (String.IsNullOrWhiteSpace(effectiveUrl))
@@ -69,14 +81,6 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
 
         _currentUrl = effectiveUrl;
 
-        if (_module is null)
-        {
-            _logger?.LogTrace("Importing JS module.");
-
-            _module = await _js.InvokeAsync<IJSObjectReference>(
-                "import", "./_content/BlazorSseClient/js/sse-client.js").ConfigureAwait(false);
-        }
-
         _logger?.LogInformation("Starting SSE connection to {CurrentUrl}", _currentUrl);
 
         var payload = new
@@ -87,26 +91,63 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
             useCredentials = _options.UseCredentials
         };
 
+        // _module is guaranteed to be set by EnsureModuleLoadedAsync
+        if (_module is null)
+        {
+            // Shouldn't happen, but guard defensively.
+            throw new InvalidOperationException("JS module not available.");
+        }
+
         await _module.InvokeVoidAsync("startSse", _currentUrl, _objRef, payload).ConfigureAwait(false);
     }
 
     public override Guid Subscribe(string eventType, Action<SseEvent> handler, CancellationToken cancellationToken = default)
     {
-        _ = (_module?.InvokeVoidAsync("subscribe", eventType));
-         
-        return base.Subscribe(eventType, handler, cancellationToken);
+        var id = base.Subscribe(eventType, handler, cancellationToken);
+
+        // Fire-and-forget registration with the JS module. If the module isn't ready yet,
+        // queue the subscription and it will be attached when module load completes.
+        RegisterSubscriptionInJs(eventType);
+
+        return id;
     }
 
     public override Guid Subscribe(string eventType, Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
     {
-        _ = (_module?.InvokeVoidAsync("subscribe", eventType));
+        var id = base.Subscribe(eventType, handler, cancellationToken);
 
-        return base.Subscribe(eventType, handler, cancellationToken);
+        // Fire-and-forget registration with the JS module. If the module isn't ready yet,
+        // queue the subscription and it will be attached when module load completes.
+        RegisterSubscriptionInJs(eventType);
+
+        return id;
     }
 
     public override void Unsubscribe(string eventType, Guid id)
-    { 
-        _ = (_module?.InvokeVoidAsync("unsubscribe", eventType));
+    {
+        // Remove pending subscription if it wasn't sent to JS yet
+        lock (_moduleLock)
+        {
+            if (_pendingSubscriptions.Remove(eventType))
+            {
+                // we removed from pending; nothing to call on JS
+            }
+            else
+            {
+                // If module present, inform JS to unsubscribe
+                if (_module is not null)
+                {
+                    try
+                    {
+                        _ = _module.InvokeVoidAsync("unsubscribe", eventType);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogDebug(ex, "Ignoring unsubscribe error.");
+                    }
+                }
+            }
+        }
 
         base.Unsubscribe(eventType, id);
     }
@@ -118,6 +159,97 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
     public async Task StopAsync()
     {
         await InternalStopAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Ensure the module load is started and return the module (or throw if import fails).
+    /// This uses a single Task to guard concurrent import attempts and attaches any pending subscriptions when complete.
+    /// </summary>
+    private Task<IJSObjectReference?> EnsureModuleLoadedAsync()
+    {
+        lock (_moduleLock)
+        {
+            if (_moduleTask is not null)
+                return _moduleTask;
+
+            _moduleTask = LoadAndInitializeModuleAsync();
+            return _moduleTask;
+        }
+    }
+
+    private async Task<IJSObjectReference?> LoadAndInitializeModuleAsync()
+    {
+        try
+        {
+            _logger?.LogTrace("Importing JS module.");
+
+            var mod = await _js.InvokeAsync<IJSObjectReference>(
+                "import", "./_content/BlazorSseClient/js/sse-client.js").AsTask().ConfigureAwait(false);
+
+            lock (_moduleLock)
+            {
+                _module = mod;
+
+                // Attach any queued subscriptions
+                if (_pendingSubscriptions.Count > 0)
+                {
+                    foreach (var evt in _pendingSubscriptions)
+                    {
+                        try
+                        {
+                            _ = _module.InvokeVoidAsync("subscribe", evt);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogDebug(ex, "Failed to attach pending subscription {Event}", evt);
+                        }
+                    }
+
+                    _pendingSubscriptions.Clear();
+                }
+            }
+
+            _logger?.LogTrace("JS module imported.");
+            return mod;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "JS module import failed.");
+            // propagate so callers (StartAsync) see the failure
+            throw;
+        }
+    }
+
+    private void RegisterSubscriptionInJs(string eventType)
+    {
+        if (string.IsNullOrWhiteSpace(eventType))
+            return;
+
+        lock (_moduleLock)
+        {
+            if (_module is not null)
+            {
+                try
+                {
+                    _ = _module.InvokeVoidAsync("subscribe", eventType);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogDebug(ex, "subscribe failed for {Event}", eventType);
+                }
+            }
+            else
+            {
+                // queue for later attach
+                _pendingSubscriptions.Add(eventType);
+
+                // ensure module load has been started
+                if (_moduleTask is null)
+                {
+                    _moduleTask = EnsureModuleLoadedAsync();
+                }
+            }
+        }
     }
 
     private async Task InternalStopAsync()
@@ -237,10 +369,27 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
 
         await InternalStopAsync().ConfigureAwait(false);
 
-        if (_module is not null)
-            await _module.DisposeAsync().ConfigureAwait(false);
+        // Wait for module task to finish if it is running, then dispose
+        try
+        {
+            if (_moduleTask is not null)
+            {
+                var m = await _moduleTask.ConfigureAwait(false);
+                if (m is not null)
+                    await m.DisposeAsync().ConfigureAwait(false);
+            }
+            else if (_module is not null)
+            {
+                await _module.DisposeAsync().ConfigureAwait(false);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogDebug(ex, "Error disposing module.");
+        }
 
         _module = null;
+        _moduleTask = null;
         _objRef?.Dispose();
         _objRef = null;
 

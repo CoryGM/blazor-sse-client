@@ -47,10 +47,6 @@ function warn(...args) {
 // Subscriptions map: messageType => listener function
 const subscriptions = new Map();
 
-// Focus/visibility handlers so we can remove them later
-let _onVisibilityChange = null;
-let _onWindowBlur = null;
-
 export function startSse(url, dotNetReference, options) {
     stopSse(); // ensures clean slate
 
@@ -165,22 +161,19 @@ export function subscribe(messageType) {
     // Avoid duplicates
     if (subscriptions.has(messageType)) return;
 
-    const listenerName = messageType;
-
     const listener = function(e) {
         // Use the subscription's messageType rather than relying on e.type
-        const listenerName = messageType;
         const data = e.data;
         const id = e.lastEventId || null;
 
-        safeInvoke('OnSseMessage', listenerName, data, id);
+        safeInvoke('OnSseMessage', messageType, data, id);
     };
 
     subscriptions.set(messageType, listener);
 
     if (eventSource) {
         try {
-            eventSource.addEventListener(listenerName, listener);
+            eventSource.addEventListener(messageType, listener);
         } catch (e) {
             if (cfg.debug) console.debug(`subscribe: failed to addEventListener "${messageType}":`, e);
         }
@@ -194,11 +187,9 @@ export function unsubscribe(messageType) {
 
     if (!listener) return;
 
-    const listenerName = messageType;
-
     if (eventSource) {
         try {
-            eventSource.removeEventListener(listenerName, listener);
+            eventSource.removeEventListener(messageType, listener);
         } catch (e) {
             // ignore
         }
@@ -268,14 +259,6 @@ function connect() {
 
             reconnectAttempts = 0;
         };
-
-        eventSource.addEventListener('Quote', (e) => {
-            const type = 'Quote';
-            const data = e.data;
-            const id = e.lastEventId || null;
-            log('Quote event received:', data);
-            safeInvoke('OnSseMessage', type, data, id);
-        });
 
         eventSource.onerror = () => {
             log('connection error');

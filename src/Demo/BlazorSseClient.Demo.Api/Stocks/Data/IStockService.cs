@@ -5,5 +5,7 @@
         Quote GetNextQuote();
         Quote GetQuote(string symbol);
         Quote GetRandomQuote();
+        IEnumerable<Quote> GetQuoteHistory(string symbol);
+        IEnumerable<string> GetSymbols()
     }
 }

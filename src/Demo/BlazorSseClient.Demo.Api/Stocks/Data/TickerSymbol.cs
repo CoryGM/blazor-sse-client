@@ -6,9 +6,10 @@
 
         private string[] stockSymbols = 
         [
-            "AAPL", "MSFT", "GOOGL", "AMZN", "TSLA",
-            "FB", "NVDA", "DIS"
+            "AAPL", "AMZN", "DIS", "FB", "GOOGL", "MSFT", "NVDA", "TSLA"
         ];
+
+        public IEnumerable<string> StockSymbols => [.. stockSymbols];
 
         /// <summary>
         /// Gets a random symbol from the list.

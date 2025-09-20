@@ -5,7 +5,7 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
     public class StockService : IStockService
     {
         private Dictionary<string, List<Quote>> _quoteHistory = [];
-        private TickerSymbol _tickerSymbol = new TickerSymbol();
+        private TickerSymbol _tickerSymbol = new();
 
         /// <summary>
         /// Gets a quote for a random symbol from the list.
@@ -15,6 +15,31 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
         {
             var symbol = _tickerSymbol.GetRandomSymbol();
             return GetQuote(symbol);
+        }
+
+        /// <summary>
+        /// Get the history for a given symbol.
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <returns></returns>
+        public IEnumerable<Quote> GetQuoteHistory(string symbol)
+        {
+            if (String.IsNullOrWhiteSpace(symbol))
+                return [];
+
+            if (_quoteHistory.ContainsKey(symbol))
+                return _quoteHistory[symbol];
+
+            return [];
+        }
+
+        /// <summary>
+        /// Get a list of all available symbols.
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<string> GetSymbols()
+        {
+            return _tickerSymbol.StockSymbols;
         }
 
         /// <summary>
@@ -47,8 +72,8 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
                 Timestamp = DateTime.UtcNow
             };
 
-            var changePercent = GetRandomChangePercent();
-            var newPrice = previousQuote.Value.Price * (1 + changePercent);
+            var changePercent = GetRandomChangePercent(previousQuote?.ChangePercent);
+            var newPrice = previousQuote!.Value.Price * (1 + changePercent);
             var change = newPrice - previousQuote.Value.Price;
 
             var newQuote = new Quote(symbol, newPrice, change, changePercent, DateTime.UtcNow);
@@ -96,27 +121,35 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
         /// towards smaller changes.
         /// </summary>
         /// <returns></returns>
-        private decimal GetRandomChangePercent()
+        private decimal GetRandomChangePercent(decimal? previousChangePercent = 0m)
         {
-            var random = new Random();
-            var swingPotential = random.Next(1, 100);
+            var swingPotential = Random.Shared.Next(1, 100);
 
+            //  Determine the maximum possible change for this iteration.
             decimal max = swingPotential switch
             {
-                <= 50 => 10.0m,
-                <= 60 => 15.0m,
-                <= 70 => 20.0m,
-                <= 80 => 25.0m,
-                <= 90 => 35.0m,
-                <= 95 => 50.0m,
-                <= 99 => 75.0m,
+                <= 50 => 0.5m,
+                <= 60 => 0.75m,
+                <= 70 => 1.0m,
+                <= 80 => 1.5m,
+                <= 90 => 2.0m,
+                <= 95 => 3.0m,
+                <= 99 => 5.0m,
                 _ => 99.0m
             };
 
-            decimal min = max * -1;
-            decimal randomPercentage = ((decimal)(random.NextDouble() * (double)(max - min)) + min) / 100;
+            //  If the previous change was negative, bias the next change to be negative as well.
+            var previousDirection = previousChangePercent < 0 ? -1.0m : 1.0m; 
+            var nextDirection = previousDirection;
+            var directionBiasChance = Random.Shared.Next(1, 100);
 
-            return randomPercentage;
+            // 92% chance to keep the same direction.
+            if (directionBiasChance > 92)
+                nextDirection *= -1.0m;
+            
+            decimal absRandomPercentage = (decimal)(Random.Shared.NextDouble()) * max / 100.0m;
+
+            return absRandomPercentage * nextDirection; 
         }
     }
 }
