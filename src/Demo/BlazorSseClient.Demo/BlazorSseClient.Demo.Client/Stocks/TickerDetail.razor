@@ -1,10 +1,44 @@
-﻿<h3>@Symbol</h3>
+﻿<div class="card" style="width: 18rem;">
+    <div class="card-body">
+        <h4 class="card-title">@Symbol</h4>
+        <p class="card-text">
 
-@if (Quotes is not null && Quotes.Any())
-{
-    foreach (var quote in Quotes)
-    {
-        @quote.Price    
-    }
-}
+        @if (Quotes is not null && Quotes.Any())
+        {
+            <table class="table table-sm">
+                <tbody>
+                @foreach (var quote in Quotes)
+                {
+                    <tr>
+                        <td>@($"{quote.Price:C}")</td>
+                        <td>@($"{quote.Change:C}")</td>
+                        @if (quote.Change > 0)
+                        {
+                          <td style="color:green;">@($"{quote.Change:C}")</td>
+                          <td style="color:green;">&#9650;</td>
+                        }
+                        else if (quote.Change < 0)
+                        {
+                            <td style="color:red;">&#9660;</td>
+                        }
+                        else
+                        {
+                            <td>&#8212;</td>
+                        }
+                        <td>@quote.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
+                    </tr>
+                }
+                </tbody>
+                
+            </table>
+        }
+        else
+        {
+            <em>No quotes received yet...</em>
+        }
+        </p>
+        @* <a href="#" class="card-link">Card link</a>
+        <a href="#" class="card-link">Another link</a> *@
+    </div>
+</div>
 
