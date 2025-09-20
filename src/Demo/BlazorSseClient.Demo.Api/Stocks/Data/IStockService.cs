@@ -6,6 +6,6 @@
         Quote GetQuote(string symbol);
         Quote GetRandomQuote();
         IEnumerable<Quote> GetQuoteHistory(string symbol);
-        IEnumerable<string> GetSymbols()
+        IEnumerable<string> GetSymbols();
     }
 }

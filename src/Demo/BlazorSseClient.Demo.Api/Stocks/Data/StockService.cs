@@ -4,8 +4,8 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
 {
     public class StockService : IStockService
     {
-        private Dictionary<string, List<Quote>> _quoteHistory = [];
-        private TickerSymbol _tickerSymbol = new();
+        private readonly Dictionary<string, List<Quote>> _quoteCache = [];
+        private readonly TickerSymbol _tickerSymbol = new();
 
         /// <summary>
         /// Gets a quote for a random symbol from the list.
@@ -24,11 +24,8 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
         /// <returns></returns>
         public IEnumerable<Quote> GetQuoteHistory(string symbol)
         {
-            if (String.IsNullOrWhiteSpace(symbol))
-                return [];
-
-            if (_quoteHistory.ContainsKey(symbol))
-                return _quoteHistory[symbol];
+            if (_quoteCache.TryGetValue(symbol, out var quotes))
+                return [.. quotes];
 
             return [];
         }
@@ -85,9 +82,9 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
 
         private Quote? GetPreviousQuote(string symbol)
         {
-            if (_quoteHistory.ContainsKey(symbol) && _quoteHistory[symbol].Count > 0)
+            if (_quoteCache.ContainsKey(symbol) && _quoteCache[symbol].Count > 0)
             {
-                return _quoteHistory[symbol].Last();
+                return _quoteCache[symbol].Last();
             }
 
             return null;
@@ -95,14 +92,14 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
 
         private void AddToHistory(Quote quote)
         {
-            if (!_quoteHistory.ContainsKey(quote.Symbol))
-                _quoteHistory[quote.Symbol] = [];
+            if (!_quoteCache.ContainsKey(quote.Symbol))
+                _quoteCache[quote.Symbol] = [];
 
-            _quoteHistory[quote.Symbol].Add(quote);
+            _quoteCache[quote.Symbol].Add(quote);
 
             // Keep only the last 100 quotes for each symbol
-            if (_quoteHistory[quote.Symbol].Count > 100)
-                _quoteHistory[quote.Symbol].RemoveAt(0);
+            if (_quoteCache[quote.Symbol].Count > 100)
+                _quoteCache[quote.Symbol].RemoveAt(0);
         }
 
         private decimal GetRandomStockPrice()

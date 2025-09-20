@@ -4,6 +4,7 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
 {
     public class WeatherService : IWeatherService
     {
+        private readonly Dictionary<string, List<CurrentWeather>> _weatherCache = new();
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<WeatherService> _logger;
 
@@ -46,7 +47,7 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                 if (weatherResponse == null)
                     return null;
 
-                return new CurrentWeather
+                var reading =  new CurrentWeather
                 {
                     City = location.Name,
                     Latitude = location.Latitude,
@@ -58,14 +59,39 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                     WindSpeed = $"{weatherResponse.Current.WindSpeed10m}{weatherResponse.Units.WindSpeed10m}",
                     WindDirection = $"{weatherResponse.Current.WindDirection10m}° {GetWindDirection(weatherResponse.Current.WindDirection10m)}",
                     WindGusts = $"{weatherResponse.Current.WindGusts10m}{weatherResponse.Units.WindGusts10m}",
-                    Precipitation = $"{weatherResponse.Current.Precipitation} {weatherResponse.Units.Precipitation}"
+                    Precipitation = $"{weatherResponse.Current.Precipitation} {weatherResponse.Units.Precipitation}",
+                    TakenAtUtc = DateTime.UtcNow
                 };
+
+                AddToCache(location.Name, reading);
+
+                return reading;
             }
             catch (Exception exception)
             {
                 _logger.LogError(exception, "Error fetching weather data for {City}", location.Name);
                 return null;
             }
+        }
+
+        public IEnumerable<CurrentWeather> GetWeatherHistory(string city)
+        {
+            if (_weatherCache.TryGetValue(city, out var cachedWeather))
+                return [.. cachedWeather];
+
+            return [];
+        }
+
+        private void AddToCache(string city, CurrentWeather weather)
+        {
+            if (!_weatherCache.ContainsKey(city))
+                _weatherCache[city] = [];
+
+            _weatherCache[city].Add(weather);
+
+            // Keep only the latest 25 entries
+            if (_weatherCache[city].Count > 25)
+                _weatherCache[city].RemoveAt(0);
         }
 
         private static string GetWindDirection(double degrees)

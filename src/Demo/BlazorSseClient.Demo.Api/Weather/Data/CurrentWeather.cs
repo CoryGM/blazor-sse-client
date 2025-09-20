@@ -13,5 +13,6 @@
         public required string WindDirection { get; init; }
         public required string WindGusts { get; init; }
         public required string Precipitation { get; init; }
+        public required DateTime TakenAtUtc { get; init; }
     }
 }

@@ -38,7 +38,7 @@ namespace BlazorSseClient.Demo.Api.Stock.Background
                 
                 _logger.LogInformation("Enqueued stock update: {Message}", JsonSerializer.Serialize(stockUpdate));
                 
-                await Task.Delay(TimeSpan.FromSeconds(2), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(4), stoppingToken);
             }
 
             _logger.LogInformation("StockBackgroundService is stopping.");
