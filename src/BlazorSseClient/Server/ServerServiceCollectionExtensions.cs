@@ -26,9 +26,6 @@ public static class ServerSseServiceCollectionExtensions
         {
             var opts = sp.GetRequiredService<ServerSseClientOptions>();
 
-            if (!string.IsNullOrWhiteSpace(opts.BaseAddress))
-                http.BaseAddress = new Uri(opts.BaseAddress, UriKind.Absolute);
-
             http.Timeout = opts.Timeout;
 
             if (!http.DefaultRequestHeaders.Accept.Any(h => h.MediaType == "text/event-stream"))

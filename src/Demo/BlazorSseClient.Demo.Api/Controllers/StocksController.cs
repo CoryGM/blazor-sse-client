@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Mvc;
 
 using BlazorSseClient.Demo.Api.Stocks.Data;
 
 namespace BlazorSseClient.Demo.Api.Controllers
 {
     [Route("api/stocks")]
+    [EnableCors("SseCorsPolicy")]
     [ApiController]
     public class StocksController : ControllerBase
     {

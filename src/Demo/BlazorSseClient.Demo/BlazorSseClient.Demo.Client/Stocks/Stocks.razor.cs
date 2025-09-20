@@ -11,17 +11,24 @@ namespace BlazorSseClient.Demo.Client.Stocks
         [Inject]
         private ISseClient SseClient { get; set; } = null!;
 
-        private JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
+        [Inject]
+        private HttpClient HttpClient { get; set; } = null!;
+
+        private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
         private readonly ConcurrentDictionary<string, List<QuoteModel>> _symbols = [];
         private Guid? _quoteSubscriptionId; 
         private const string _messageType = "Quote";
+        private readonly List<string> _availableSymbols = [];
 
-        protected override void OnAfterRender(bool firstRender)
+        protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             base.OnAfterRender(firstRender);
 
             if (firstRender)
+            {
+                await GetAvailableSymbolsAsync();
                 _quoteSubscriptionId = SseClient.Subscribe(_messageType, AddQuote);
+            }
         }
 
         private void AddQuote(SseEvent sseEvent)
@@ -55,6 +62,30 @@ namespace BlazorSseClient.Demo.Client.Stocks
                 // Log or handle the error as needed
                 return;
             }
+        }
+
+        private async Task GetAvailableSymbolsAsync()
+        {
+            _availableSymbols.Clear();
+
+            var response = await HttpClient.GetAsync("api/stocks/symbols");
+            var content = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ApplicationException(content);
+            }
+
+            var symbols = JsonSerializer.Deserialize<List<string>>(content, _jsonOptions);
+
+
+            if (symbols is not null && symbols.Count > 0)
+                _availableSymbols.AddRange(symbols.OrderBy(x => x));
+
+            foreach (var symbol in _availableSymbols)
+                _symbols.TryAdd(symbol, []);
+
+            StateHasChanged();
         }
 
         public ValueTask DisposeAsync()

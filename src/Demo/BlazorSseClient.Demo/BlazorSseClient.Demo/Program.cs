@@ -14,6 +14,19 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
 
+builder.Services.AddHttpClient("Api",
+    c =>
+    {
+        var baseAddress = builder.Configuration["Api:BaseAddress"];
+        if (String.IsNullOrWhiteSpace(baseAddress))
+        {
+            throw new InvalidOperationException("Api:BaseAddress configuration value is missing or empty.");
+        }
+        c.BaseAddress = new Uri(baseAddress);
+    });
+
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("Api"));
+
 builder.Services.AddServerSseClient(options =>
 {
     options.BaseAddress = builder.Configuration["Sse:BaseAddress"];

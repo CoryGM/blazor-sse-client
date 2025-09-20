@@ -9,8 +9,8 @@
 
 @if (_symbols.Any())
 {
-    foreach (var symbol in _symbols)
+    foreach (var symbol in _availableSymbols)
     {
-        <TickerDetail Symbol="@symbol.Key" Quotes="@symbol.Value" />
+        <TickerDetail Symbol="@symbol" Quotes="@_symbols[symbol]" />
     }
 }

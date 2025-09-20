@@ -81,7 +81,7 @@ namespace BlazorSseClient
         /// <param name="id"></param>
         public virtual void Unsubscribe(string eventType, Guid id)
         {
-            if (string.IsNullOrWhiteSpace(eventType)) return;
+            if (String.IsNullOrWhiteSpace(eventType)) return;
             if (_byEventType.TryGetValue(eventType, out var bag))
             {
                 bag.Remove(id);
@@ -109,6 +109,46 @@ namespace BlazorSseClient
             return ValueTask.CompletedTask;
         }
 
+        /// <summary>
+        /// Get the effective URL for starting the SSE listener.
+        /// If the url from the is already an absolute URL the assumption
+        /// is the user wants to use that instead of concatenating it to the
+        /// base address. 
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        protected static string? GetEffectiveUrl(string? url, string? defaultUrl, Dictionary<string, string>? queryParameters = null)
+        {
+            queryParameters ??= [];
+
+            if (String.IsNullOrWhiteSpace(defaultUrl))
+                defaultUrl = String.Empty;
+
+            if (String.IsNullOrWhiteSpace(url))
+                return defaultUrl;
+
+            if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
+                url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                return url;
+
+            if (String.IsNullOrWhiteSpace(defaultUrl))
+                return url;
+
+            // Make sure we don't end up with a double-slash
+            var newUrl = $"{(defaultUrl.EndsWith('/') ? defaultUrl + url.TrimEnd('/') : defaultUrl)}" +
+                         "//" +
+                         $"{(url.StartsWith('/') ? url.TrimStart('/') : url)}";
+
+            if (queryParameters.Count == 0)
+                return newUrl;
+
+            var sep = newUrl.Contains('?') ? '&' : '?';
+            var queryParams = String.Join('&', queryParameters.Select(kv =>
+                $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
+
+            return $"{newUrl}{sep}{queryParams}";
+        }
+
         internal async Task DispatchOnMessageAsync(SseClientSource clientSource, SseEvent? sseMessage)
         {
             if (sseMessage is null) return;
@@ -117,7 +157,7 @@ namespace BlazorSseClient
 
             var tasks = new List<Task>(2) { _allEvents.InvokeAsync(sseMessage.Value) };
 
-            if (!string.IsNullOrWhiteSpace(sseMessage.Value.EventType) &&
+            if (!String.IsNullOrWhiteSpace(sseMessage.Value.EventType) &&
                 _byEventType.TryGetValue(sseMessage.Value.EventType, out var bag))
             {
                 tasks.Add(bag.InvokeAsync(sseMessage.Value));

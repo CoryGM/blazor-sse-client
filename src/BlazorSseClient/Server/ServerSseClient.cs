@@ -10,18 +10,20 @@ namespace BlazorSseClient.Server
     public class ServerSseClient : SseClientBase, ISseClient
     {
         private readonly ISseStreamClient _sseStreamClient;
-        private string _currentUrl = string.Empty;
+        private readonly ServerSseClientOptions _options;
+        private string _currentUrl = String.Empty;
         private CancellationTokenSource? _cts;
         private Task? _listenTask;
         private SseRunState _runState = SseRunState.Stopped;
         private SseConnectionState _connectionState = SseConnectionState.Closed;
 
-        public ServerSseClient(ISseStreamClient sseStreamClient, ILogger<ServerSseClient>? logger)
+        public ServerSseClient(ISseStreamClient sseStreamClient, ServerSseClientOptions options, ILogger<ServerSseClient>? logger)
             : base(logger)
         {
             ArgumentNullException.ThrowIfNull(sseStreamClient, nameof(sseStreamClient));
 
             _sseStreamClient = sseStreamClient;
+            _options = options ?? new ServerSseClientOptions();
         }
 
         public SseRunState RunState => _runState;
@@ -29,28 +31,32 @@ namespace BlazorSseClient.Server
 
         public Task StartAsync(string? url, bool restartOnDifferentUrl = true)
         {
-            if (string.IsNullOrWhiteSpace(url))
-                throw new ArgumentException("URL is required.", nameof(url));
+            var effectiveUrl = GetEffectiveUrl(url, _options.BaseAddress);
+
+            if (String.IsNullOrWhiteSpace(effectiveUrl))
+                throw new InvalidOperationException("Cannot start SSE listener. No URL specified and no BaseAddress configured.");
 
             if (_runState == SseRunState.Started)
             {
-                if (!restartOnDifferentUrl || string.Equals(url, _currentUrl, StringComparison.OrdinalIgnoreCase))
+                if (restartOnDifferentUrl && !String.Equals(effectiveUrl, _currentUrl, StringComparison.OrdinalIgnoreCase))
                 {
-                    _logger?.LogDebug("SSE already started; ignoring StartAsync.");
-
+                    _logger?.LogDebug("SSE already started with a different URL; Restarting the Service.");
+                    _ = StopAsync();
+                }
+                else
+                {
+                    _logger?.LogDebug("SSE already started with the same URL; ignoring StartAsync.");
                     return Task.CompletedTask;
                 }
-
-                _ = StopAsync();
             }
 
-            _logger?.LogInformation("Starting SSE listener for {Url}", url);
-            _currentUrl = url;
+            _logger?.LogInformation("Starting SSE listener for {Url}", effectiveUrl);
+            _currentUrl = effectiveUrl;
             _cts = new CancellationTokenSource();
 
             ChangeRunState(SseRunState.Starting);
 
-            _listenTask = Task.Run(() => ListenLoopAsync(url, _cts.Token));
+            _listenTask = Task.Run(() => ListenLoopAsync(effectiveUrl, _cts.Token));
 
             ChangeRunState(SseRunState.Started);
 
@@ -173,7 +179,7 @@ namespace BlazorSseClient.Server
 
                     string? eventId = null;
 
-                    if (!string.IsNullOrEmpty(item.Data))
+                    if (!String.IsNullOrEmpty(item.Data))
                     {
                         try
                         {

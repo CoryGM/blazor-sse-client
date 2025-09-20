@@ -7,25 +7,33 @@
         {
             <table class="table table-sm">
                 <tbody>
-                @foreach (var quote in Quotes)
+                @foreach (var (quote, index) in DisplayQuotes.Select((value, index) => (value, index)))
                 {
                     <tr>
+                        <td>
+                            @if (quote.Timestamp == LastUpdated)
+                            {
+                                <i class="bi bi-1-square-fill"></i>
+                            }
+                            else
+                            {
+                                <i class="@($"bi bi-{index + 1}-square") text-secondary"></i>
+                            }
+                        </td>
                         <td>@($"{quote.Price:C}")</td>
-                        <td>@($"{quote.Change:C}")</td>
+
                         @if (quote.Change > 0)
                         {
-                          <td style="color:green;">@($"{quote.Change:C}")</td>
-                          <td style="color:green;">&#9650;</td>
+                            <td class="text-success text-end">@($"{quote.Change:C}") <i class="bi bi-caret-up-fill"></i></td>
                         }
                         else if (quote.Change < 0)
                         {
-                            <td style="color:red;">&#9660;</td>
+                            <td class="text-danger text-end">@($"{quote.Change:C}") <i class="bi bi-caret-down-fill"></i></td>
                         }
                         else
                         {
                             <td>&#8212;</td>
                         }
-                        <td>@quote.Timestamp.ToLocalTime().ToString("HH:mm:ss")</td>
                     </tr>
                 }
                 </tbody>
@@ -37,8 +45,10 @@
             <em>No quotes received yet...</em>
         }
         </p>
-        @* <a href="#" class="card-link">Card link</a>
-        <a href="#" class="card-link">Another link</a> *@
+        @if (LastUpdated.HasValue)
+        {
+            <p class="card-text"><small class="text-muted">Last updated: @LastUpdated.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</small></p>
+        }
     </div>
 </div>
 

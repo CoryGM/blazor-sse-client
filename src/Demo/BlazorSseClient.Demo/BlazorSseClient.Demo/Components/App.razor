@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
-    <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="BlazorSseClient.Demo.styles.css" />
     <link rel="icon" type="image/png" href="favicon.png" />
     <HeadOutlet />
@@ -26,6 +25,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await SseClient.StartAsync("https://localhost:7290/api/stream/messages").ConfigureAwait(false);
+        await SseClient.StartAsync().ConfigureAwait(false);
     }
 }

@@ -20,10 +20,10 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
         public int UtcOffsetSeconds { get; init; }
 
         [JsonPropertyName("timezone")]
-        public string TimeZone { get; init; } = string.Empty;
+        public string TimeZone { get; init; } = String.Empty;
 
         [JsonPropertyName("timezone_abbreviation")]
-        public string TimeZoneAbbreviation { get; init; } = string.Empty;
+        public string TimeZoneAbbreviation { get; init; } = String.Empty;
 
         [JsonPropertyName("elevation")]
         public double Elevation { get; init; }

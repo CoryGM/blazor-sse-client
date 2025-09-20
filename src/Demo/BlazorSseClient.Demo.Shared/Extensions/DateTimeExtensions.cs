@@ -28,7 +28,7 @@ namespace BlazorSseClient.Demo.Shared.Extensions
         /// <param name="value"></param>
         /// <param name="longUnits"> If true, uses long unit names (e.g. "years" instead of "y").</param>
         /// <param name="maxDetail">
-        ///     The maximum number of time units to include in the display string. 
+        ///     The maximum number of time units to include in the display String. 
         ///     For example, if the TimeSpan is 1 year, 2 months, 3 days, 4 hours, 
         ///     5 minutes and 6 seconds, and maxDetail is 2, the display string will 
         ///     be "1 year, 2 months".</param>
@@ -117,7 +117,7 @@ namespace BlazorSseClient.Demo.Shared.Extensions
             if (seconds > 0 || components.Count == 0)
                 components.Add((seconds, $"second{(seconds > 1 ? "s" : "")}", "s"));
 
-            return string.Join(", ",
+            return String.Join(", ",
                 components.Take(depth)
                           .Select(c => $"{c.value}{(style == LabelStyle.Long ? $" {c.longLabel}" : c.shortLabel)}"));
         }

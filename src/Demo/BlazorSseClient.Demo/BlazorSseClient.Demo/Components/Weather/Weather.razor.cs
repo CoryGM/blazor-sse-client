@@ -87,7 +87,7 @@ namespace BlazorSseClient.Demo.Components.Weather
                     ReadingsCount = readingsCount
                 });
 
-                readings.Sort((a, b) => string.Compare(a.City, b.City, StringComparison.OrdinalIgnoreCase));
+                readings.Sort((a, b) => String.Compare(a.City, b.City, StringComparison.OrdinalIgnoreCase));
 
             }
             catch (JsonException)

@@ -4,7 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BlazorSseClient.Demo.Api.Controllers
 {
-    [Route("api/stream")]
+    [Route("stream")]
+    [EnableCors("SseCorsPolicy")]
     [ApiController]
     public class StreamController : ControllerBase
     {
@@ -17,7 +18,6 @@ namespace BlazorSseClient.Demo.Api.Controllers
 
         [HttpGet]
         [Route("messages")]
-        [EnableCors("SseCorsPolicy")]
         public async Task Stream(CancellationToken token)
         {
             Response.ContentType = "text/event-stream";
@@ -33,7 +33,7 @@ namespace BlazorSseClient.Demo.Api.Controllers
                 sb.AppendLine($"event: {message.Type}");
 
                 // Ensure multi-line payloads are sent correctly
-                foreach (var line in (message.Payload ?? string.Empty).Split('\n'))
+                foreach (var line in (message.Payload ?? String.Empty).Split('\n'))
                 {
                     sb.AppendLine($"data: {line.TrimEnd('\r')}");
                 }

@@ -63,14 +63,14 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
         // Ensure module is loaded before invoking startSse.
         await EnsureModuleLoadedAsync().ConfigureAwait(false);
 
-        var effectiveUrl = GetEffectiveUrl(url);
+        var effectiveUrl = GetEffectiveUrl(url, _options.BaseAddress, _options.QueryParameters);
 
         if (String.IsNullOrWhiteSpace(effectiveUrl))
             throw new ArgumentException("URL is required.", nameof(url));
 
         if (_runState == SseRunState.Started)
         {
-            if (!restartOnDifferentUrl || string.Equals(effectiveUrl, _currentUrl, StringComparison.OrdinalIgnoreCase))
+            if (!restartOnDifferentUrl || String.Equals(effectiveUrl, _currentUrl, StringComparison.OrdinalIgnoreCase))
             {
                 _logger?.LogDebug("SSE already started; ignoring StartAsync.");
                 return;
@@ -222,7 +222,7 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
 
     private void RegisterSubscriptionInJs(string eventType)
     {
-        if (string.IsNullOrWhiteSpace(eventType))
+        if (String.IsNullOrWhiteSpace(eventType))
             return;
 
         lock (_moduleLock)
@@ -269,41 +269,6 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
 
         _currentUrl = null;
         _logger?.LogTrace("InternalStopAsync: state cleared.");
-    }
-
-    /// <summary>
-    /// Get the effective URL for starting the SSE listener.
-    /// If the url from the is already an absolute URL the assumption
-    /// is the user wants to use that instead of concatenating it to the
-    /// base address. 
-    /// </summary>
-    /// <param name="url"></param>
-    /// <returns></returns>
-    private string? GetEffectiveUrl(string? url)
-    {
-        if (String.IsNullOrWhiteSpace(url))
-            return _baseAddress;
-
-        if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
-            url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-            return url;
-
-        if (String.IsNullOrWhiteSpace(_baseAddress))
-            return url;
-
-        // Make sure we don't end up with a double-slash
-        var newUrl = $"{(_baseAddress.EndsWith('/') ? _baseAddress + url.TrimEnd('/') : _baseAddress)}" +
-                     "//" +
-                     $"{(url.StartsWith('/') ? url.TrimStart('/') : url)}";
-
-        if (_options.QueryParameters.Count == 0)
-            return newUrl;
-
-        var sep = newUrl.Contains('?') ? '&' : '?';
-        var queryParams = String.Join('&', _options.QueryParameters.Select(kv =>
-            $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
-
-        return $"{newUrl}{sep}{queryParams}";
     }
 
     private void DispatchRunStateChange(SseRunState state)
@@ -466,10 +431,10 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
         [JSInvokable]
         public void OnSseMessage(string eventType, string? data, string? id)
         {
-            if (string.IsNullOrWhiteSpace(eventType))
+            if (String.IsNullOrWhiteSpace(eventType))
                 return;
 
-            var sseEvent = new SseEvent(eventType, data ?? string.Empty, id);
+            var sseEvent = new SseEvent(eventType, data ?? String.Empty, id);
 
             var preview = data?.Length > 64 ? data[..64] + "…" : data;
             _logger?.LogTrace("Dispatched {Event} (Id={Id}, Data='{Preview}')", eventType, id ?? "null", preview);
