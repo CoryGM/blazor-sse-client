@@ -1,7 +1,8 @@
-﻿
-using BlazorSseClient.Services;
+﻿using BlazorSseClient.Services;
 using Microsoft.AspNetCore.Components;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace BlazorSseClient.Demo.Client.Stocks
@@ -15,7 +16,7 @@ namespace BlazorSseClient.Demo.Client.Stocks
         private HttpClient HttpClient { get; set; } = null!;
 
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
-        private readonly ConcurrentDictionary<string, List<QuoteModel>> _symbols = [];
+        private readonly ConcurrentDictionary<string, List<QuoteModel>> _quoteCache = [];
         private Guid? _quoteSubscriptionId; 
         private const string _messageType = "Quote";
         private readonly List<string> _availableSymbols = [];
@@ -43,17 +44,7 @@ namespace BlazorSseClient.Demo.Client.Stocks
                 if (quote is null)
                     return;
 
-                if (_symbols.ContainsKey(quote.Value.Symbol))
-                {
-                    _symbols[quote.Value.Symbol].Add(quote.Value);
-                }
-                else
-                {
-                    _symbols.TryAdd(quote.Value.Symbol, new List<QuoteModel>([quote.Value]));
-                }
-
-                if (_symbols[quote.Value.Symbol].Count > 20)
-                    _symbols[quote.Value.Symbol].RemoveAt(0);
+                AddQuoteInternal(quote.Value);
 
                 InvokeAsync(StateHasChanged);
             }
@@ -62,6 +53,32 @@ namespace BlazorSseClient.Demo.Client.Stocks
                 // Log or handle the error as needed
                 return;
             }
+        }
+
+        private void AddQuoteInternal(QuoteModel quote, bool trim = true)
+        {
+            if (_quoteCache.TryGetValue(quote.Symbol, out List<QuoteModel>? value))
+            {
+                if (value.Any(x => x.Id == quote.Id))
+                    return;
+
+                value.Add(quote);
+            }
+            else
+            {
+                _ = _quoteCache.TryAdd(quote.Symbol, new List<QuoteModel>([quote]));
+            }
+
+            if (trim)
+                TrimToMax(_quoteCache[quote.Symbol]);
+        }
+
+        private static void TrimToMax(List<QuoteModel> list, int max = 20)
+        {
+            list.Sort((a, b) => b.Timestamp.CompareTo(a.Timestamp));
+
+            if (list.Count > max)
+                list.RemoveRange(max, list.Count - max);
         }
 
         private async Task GetAvailableSymbolsAsync()
@@ -83,9 +100,40 @@ namespace BlazorSseClient.Demo.Client.Stocks
                 _availableSymbols.AddRange(symbols.OrderBy(x => x));
 
             foreach (var symbol in _availableSymbols)
-                _symbols.TryAdd(symbol, []);
+            {
+                if (_quoteCache.TryAdd(symbol, []))
+                    await LoadQuoteHistory(symbol);
+            }
 
             StateHasChanged();
+        }
+
+        private async Task LoadQuoteHistory(string? symbol)
+        {
+            if (String.IsNullOrWhiteSpace(symbol))
+                return;
+
+            var response = await HttpClient.GetAsync($"api/stocks/quotes/{symbol}/history");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new ApplicationException();
+            }
+
+            var quotes = await response.Content.ReadFromJsonAsync<IEnumerable<QuoteModel>>();
+
+            if (quotes is null)
+                return;
+
+            var trim = false;
+
+            for (var i = 0; i < quotes.Count(); i++)
+            {
+                if (i == quotes.Count() - 1)
+                    trim = true;
+
+                AddQuoteInternal(quotes.ElementAt(i), trim);
+            }
         }
 
         public ValueTask DisposeAsync()

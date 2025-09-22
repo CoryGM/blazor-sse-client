@@ -7,10 +7,16 @@
 
 <h3>Stocks</h3>
 
-@if (_symbols.Any())
+@if (_quoteCache.Any())
 {
-    foreach (var symbol in _availableSymbols)
+    <div class="row">
+
+    @foreach (var symbol in _availableSymbols)
     {
-        <TickerDetail Symbol="@symbol" Quotes="@_symbols[symbol]" />
+        <div class="col-3">
+            <TickerDetail Symbol="@symbol" Quotes="@_quoteCache[symbol]" />
+        </div>
     }
+
+    </div>
 }

@@ -22,7 +22,7 @@ namespace BlazorSseClient.Demo.Api.Controllers
             _logger = logger;
         }
 
-        [HttpGet("quote/{symbol}")]
+        [HttpGet("quotes/{symbol}/most-recent")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(Quote))]
         public ActionResult<Quote?> GetQuote(string symbol)
         {
@@ -31,9 +31,23 @@ namespace BlazorSseClient.Demo.Api.Controllers
             if (String.IsNullOrWhiteSpace(symbol))
                 return BadRequest("Symbol is required.");
 
-            var quote = _service.GetQuote(symbol);
+            var quote = _service.GetMostRecentQuote(symbol);
 
             return Ok(quote);
+        }
+
+        [HttpGet("quotes/{symbol}/history")]
+        [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(IEnumerable<Quote>))]
+        public ActionResult<IEnumerable<Quote>> GetQuoteHistory(string symbol)
+        {
+            _logger?.LogDebug("GetQuoteHistory: {symbol}", symbol);
+
+            if (String.IsNullOrWhiteSpace(symbol))
+                return BadRequest("Symbol is required.");
+
+            var history = _service.GetQuoteHistory(symbol);
+
+            return Ok(history);
         }
 
         [HttpGet("symbols")]

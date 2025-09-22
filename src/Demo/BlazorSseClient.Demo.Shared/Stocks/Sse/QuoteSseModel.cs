@@ -1,5 +1,5 @@
 ﻿namespace BlazorSseClient.Demo.Shared.Stocks.Sse
 {
-    public readonly record struct QuoteSseModel(string Symbol, decimal Price, decimal Change,
+    public readonly record struct QuoteSseModel(Guid Id, string Symbol, decimal Price, decimal Change,
         decimal ChangePercent, DateTime Timestamp);
 }

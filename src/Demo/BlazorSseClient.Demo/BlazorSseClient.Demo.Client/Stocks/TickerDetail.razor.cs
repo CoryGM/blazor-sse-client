@@ -10,26 +10,32 @@ namespace BlazorSseClient.Demo.Client.Stocks
         [Parameter]
         public IEnumerable<QuoteModel>? Quotes { get; set; }
 
-        private IEnumerable<QuoteModel> DisplayQuotes = [];
+        private List<QuoteModel> DisplayQuotes = [];
+        private List<string> FillerLines = [];
         private DateTime? LastUpdated = null;
-
 
         protected override void OnParametersSet()
         {
             if (String.IsNullOrWhiteSpace(Symbol))
                 throw new ArgumentException("Symbol parameter is required.", nameof(Symbol));
 
+            FillerLines.Clear();
+            DisplayQuotes.Clear();
+
             Quotes ??= [];
 
-            DisplayQuotes = Quotes
-                .OrderByDescending(q => q.Timestamp)
-                .Take(5)
-                .ToList();
+            DisplayQuotes.AddRange([.. Quotes.Take(5)]);
 
             if (Quotes.Any())
                 LastUpdated = Quotes.Max(q => q.Timestamp);
             else
                 LastUpdated = null;
+
+            var fillerCount = 5 - DisplayQuotes.Count;
+            FillerLines.AddRange(Enumerable.Repeat(String.Empty, fillerCount));
+
+            if (fillerCount == 5)
+                FillerLines[0] = "No quotes received yet...";
         }
     }
 }

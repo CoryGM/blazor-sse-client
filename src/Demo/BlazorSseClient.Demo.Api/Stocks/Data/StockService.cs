@@ -14,6 +14,7 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
         public Quote GetRandomQuote()
         {
             var symbol = _tickerSymbol.GetRandomSymbol();
+
             return GetQuote(symbol);
         }
 
@@ -50,6 +51,22 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
         }
 
         /// <summary>
+        /// Get the most recent quote for the specified symbol, 
+        /// or a new quote if none exists.
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <returns></returns>
+        public Quote GetMostRecentQuote(string symbol)
+        {
+            var previousQuote = GetMostRecentQuoteInternal(symbol);
+
+            if (previousQuote is null)
+                return GetQuote(symbol);
+
+            return previousQuote.Value;
+        }
+
+        /// <summary>
         /// Gets a new quote for the specified symbol.
         /// </summary>
         /// <param name="symbol"></param>
@@ -58,10 +75,11 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
         {
             // In a real application, you would get the quote from a database or an external service.
             // Here, we just return a dummy quote.
-            var previousQuote = GetPreviousQuote(symbol);
+            var previousQuote = GetMostRecentQuoteInternal(symbol);
 
             previousQuote ??= new Quote
             {
+                Id = Guid.Empty,
                 Symbol = symbol,
                 Price = GetRandomStockPrice(),
                 Change = 0.0m,
@@ -73,18 +91,19 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
             var newPrice = previousQuote!.Value.Price * (1 + changePercent);
             var change = newPrice - previousQuote.Value.Price;
 
-            var newQuote = new Quote(symbol, newPrice, change, changePercent, DateTime.UtcNow);
+            var newQuote = new Quote(Guid.CreateVersion7(), symbol, newPrice, change, changePercent, DateTime.UtcNow);
 
             AddToHistory(newQuote);
 
             return newQuote;
         }
 
-        private Quote? GetPreviousQuote(string symbol)
+        public Quote? GetMostRecentQuoteInternal(string symbol)
         {
-            if (_quoteCache.ContainsKey(symbol) && _quoteCache[symbol].Count > 0)
+            if (_quoteCache.TryGetValue(symbol, out List<Quote>? value))
             {
-                return _quoteCache[symbol].Last();
+                if (value.Count != 0)
+                    return value.OrderBy(x => x.Timestamp).Last();
             }
 
             return null;
@@ -102,7 +121,7 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
                 _quoteCache[quote.Symbol].RemoveAt(0);
         }
 
-        private decimal GetRandomStockPrice()
+        private static decimal GetRandomStockPrice()
         {
             var random = new Random();
             decimal min = 75.0m;
@@ -118,7 +137,7 @@ namespace BlazorSseClient.Demo.Api.Stocks.Data
         /// towards smaller changes.
         /// </summary>
         /// <returns></returns>
-        private decimal GetRandomChangePercent(decimal? previousChangePercent = 0m)
+        private static decimal GetRandomChangePercent(decimal? previousChangePercent = 0m)
         {
             var swingPotential = Random.Shared.Next(1, 100);
 

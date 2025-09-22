@@ -1,9 +1,9 @@
-﻿<div class="card" style="width: 18rem;">
+﻿<div class="card mb-3" style="width: 18rem;">
     <div class="card-body">
         <h4 class="card-title">@Symbol</h4>
         <p class="card-text">
 
-        @if (Quotes is not null && Quotes.Any())
+        @if (Quotes is not null)
         {
             <table class="table table-sm">
                 <tbody>
@@ -34,6 +34,18 @@
                         {
                             <td>&#8212;</td>
                         }
+                    </tr>
+                }
+                @foreach (var fillerLine in FillerLines)
+                {
+                    <tr>
+                        <td colspan="3">
+                        @if (String.IsNullOrWhiteSpace(fillerLine))
+                        {
+                            @:&nbsp;                                        
+                        }
+                            <em>@fillerLine</em>
+                        </td>
                     </tr>
                 }
                 </tbody>

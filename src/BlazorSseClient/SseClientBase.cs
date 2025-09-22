@@ -81,7 +81,9 @@ namespace BlazorSseClient
         /// <param name="id"></param>
         public virtual void Unsubscribe(string eventType, Guid id)
         {
-            if (String.IsNullOrWhiteSpace(eventType)) return;
+            if (String.IsNullOrWhiteSpace(eventType))
+                return;
+
             if (_byEventType.TryGetValue(eventType, out var bag))
             {
                 bag.Remove(id);
@@ -94,7 +96,9 @@ namespace BlazorSseClient
         /// <param name="owner"></param>
         public void UnsubscribeOwner(object owner)
         {
-            if (owner is null) return;
+            if (owner is null) 
+                return;
+
             foreach (var bag in _byEventType.Values)
                 bag.RemoveOwner(owner); // optional extension, not strictly needed
 
