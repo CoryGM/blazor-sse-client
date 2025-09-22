@@ -13,9 +13,9 @@
     from the server. A new reading is sent every 10 seconds.
 </p>
 
-<p>Cities Reporting: @readings.Count</p>
+<p>Cities Reporting: @_readings.Count</p>
 
-@if (readings == null)
+@if (_readings == null)
 {
     <p><em>Loading...</em></p>
 }
@@ -36,7 +36,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var reading in readings)
+            @foreach (var reading in _readings)
             {
                 <tr class="@(reading.IsLastReported ? "table-success" : null)">
                     <td>

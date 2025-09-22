@@ -4,7 +4,7 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
 {
     public class WeatherService : IWeatherService
     {
-        private readonly Dictionary<string, List<CurrentWeather>> _weatherCache = new();
+        private readonly Dictionary<string, List<CurrentWeather>> _weatherCache = [];
         private readonly IHttpClientFactory _httpClientFactory;
         private readonly ILogger<WeatherService> _logger;
 
@@ -47,7 +47,7 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                 if (weatherResponse == null)
                     return null;
 
-                var reading =  new CurrentWeather
+                var reading = new CurrentWeather
                 {
                     City = location.Name,
                     Latitude = location.Latitude,
@@ -60,10 +60,11 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                     WindDirection = $"{weatherResponse.Current.WindDirection10m}° {GetWindDirection(weatherResponse.Current.WindDirection10m)}",
                     WindGusts = $"{weatherResponse.Current.WindGusts10m}{weatherResponse.Units.WindGusts10m}",
                     Precipitation = $"{weatherResponse.Current.Precipitation} {weatherResponse.Units.Precipitation}",
-                    TakenAtUtc = DateTime.UtcNow
+                    TakenAtUtc = DateTime.UtcNow,
+                    ReadingNumber = 1
                 };
 
-                AddToCache(location.Name, reading);
+                AddToCache(reading);
 
                 return reading;
             }
@@ -76,22 +77,91 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
 
         public IEnumerable<CurrentWeather> GetWeatherHistory(string city)
         {
-            if (_weatherCache.TryGetValue(city, out var cachedWeather))
+            var key = GetNormalizedKeyName(city);
+
+            if (String.IsNullOrEmpty(key))
+                return [];
+
+            if (_weatherCache.TryGetValue(key, out var cachedWeather))
                 return [.. cachedWeather];
 
             return [];
         }
 
-        private void AddToCache(string city, CurrentWeather weather)
+        public IEnumerable<CurrentWeather> GetMostRecentReadings()
         {
-            if (!_weatherCache.ContainsKey(city))
-                _weatherCache[city] = [];
+            var mostRecentReadings = new List<CurrentWeather>();
 
-            _weatherCache[city].Add(weather);
+            foreach (var key in _weatherCache.Keys)
+            {
+                var mostRecent = GetMostRecentReading(key);
 
-            // Keep only the latest 25 entries
-            if (_weatherCache[city].Count > 25)
-                _weatherCache[city].RemoveAt(0);
+                if (mostRecent is not null)
+                    mostRecentReadings.Add(mostRecent.Value);
+            }
+
+            return mostRecentReadings;  
+        }
+
+        public CurrentWeather? GetMostRecentReading(string city)
+        {
+            var key = GetNormalizedKeyName(city);
+
+            if (String.IsNullOrEmpty(key))
+                return null;
+
+            if (_weatherCache.TryGetValue(key, out var cachedWeather))
+            {
+                if (cachedWeather.Count == 0)
+                    return null;
+
+                var mostRecentTimeStamp = cachedWeather.Max(x => x.TakenAtUtc);
+                var mostRecent = cachedWeather.FirstOrDefault(x => x.TakenAtUtc == mostRecentTimeStamp);    
+
+                return mostRecent;
+            }
+
+            return null;
+        }
+
+        private void AddToCache(CurrentWeather weather)
+        {
+            var key = GetNormalizedKeyName(weather.City);
+
+            if (String.IsNullOrEmpty(key))
+                return;
+
+            if (_weatherCache.TryGetValue(key, out List<CurrentWeather>? value))
+            {
+                var mostRecentReading = GetMostRecentReading(key);
+
+                if (value.Count == 0)
+                {
+                    value.Add(weather);
+                    return;
+                }
+
+                var maxReadingNumber = value.Count > 0 ? value.Max(x => x.ReadingNumber) : 0;
+                var newWeatherRecord = weather with { ReadingNumber = maxReadingNumber + 1 };
+                value.Add(newWeatherRecord);
+
+                // Keep only the latest 25 entries
+                while (value.Count > 25)
+                    value.RemoveAt(0);
+            }
+            else
+            {
+                _weatherCache[key] = [];
+                _weatherCache[key].Add(weather);
+            }
+        }
+
+        private static string? GetNormalizedKeyName(string? key)
+        {
+            if (String.IsNullOrWhiteSpace(key))
+                return String.Empty;
+
+            return key.Trim().ToLowerInvariant();
         }
 
         private static string GetWindDirection(double degrees)

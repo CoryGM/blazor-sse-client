@@ -9,7 +9,7 @@ namespace BlazorSseClient.Demo.Components.Weather
         [Inject]
         private ISseClient SseClient { get; set; } = null!;
 
-        private readonly List<WeatherModel> readings = [];
+        private readonly List<WeatherModel> _readings = [];
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
         private Guid? _weatherSubscriptionId;
         private const string _messageType = "Weather";
@@ -33,7 +33,7 @@ namespace BlazorSseClient.Demo.Components.Weather
         {
             if (firstRender)
             {
-                readings.Clear(); // Optional: clear any server-side data
+                _readings.Clear(); // Optional: clear any server-side data
                 _weatherSubscriptionId = SseClient.Subscribe(_messageType, AddReading);
             }
         }
@@ -61,18 +61,8 @@ namespace BlazorSseClient.Demo.Components.Weather
                     Console.WriteLine("Deserialized currentWeather is null.");
                     return;
                 }
-
-                var existingReading = readings.Find(r => r.City == currentWeather.Value.City);
-                var readingsCount = existingReading?.ReadingsCount + 1 ?? 1;
-
-                readings.RemoveAll(r => r.City == currentWeather.Value.City);
-
-                foreach (var reading in readings)
-                {
-                    reading.IsLastReported = false;
-                }
-
-                readings.Add(new WeatherModel
+                
+                var reading = new WeatherModel
                 {
                     City = currentWeather?.City ?? "Unknown",
                     Temperature = currentWeather?.Temperature ?? "N/A",
@@ -83,12 +73,10 @@ namespace BlazorSseClient.Demo.Components.Weather
                     WindDirection = currentWeather?.WindDirection ?? "N/A",
                     WindGusts = currentWeather?.WindGusts ?? "N/A",
                     Precipitation = currentWeather?.Precipitation ?? "N/A",
-                    IsLastReported = true,
-                    ReadingsCount = readingsCount
-                });
+                    ReadingsCount = 0
+                };
 
-                readings.Sort((a, b) => String.Compare(a.City, b.City, StringComparison.OrdinalIgnoreCase));
-
+                AddReading(reading);
             }
             catch (JsonException)
             {
@@ -96,9 +84,33 @@ namespace BlazorSseClient.Demo.Components.Weather
                 return;
             }
 
-            Console.WriteLine($"Before StateHasChanged. readings.Count: {readings.Count}");
+            Console.WriteLine($"Before StateHasChanged. readings.Count: {_readings.Count}");
             InvokeAsync(StateHasChanged);
             Console.WriteLine("After StateHasChanged");
+        }
+
+        private void AddReading(WeatherModel reading)
+        {
+            var existingReading = _readings.Find(r => r.City == reading.City);
+
+            if (existingReading is null)
+            {
+                _readings.Add(reading);
+            }
+            else
+            {
+                _readings.RemoveAll(r => r.City == reading.City);
+                _readings.Add(reading);
+            }
+
+            _readings.Sort((a, b) => String.Compare(a.City, b.City, StringComparison.OrdinalIgnoreCase));
+
+            var lastReportedUtc = _readings.Max(r => r.ReportedAtUtc);
+
+            foreach (var r in _readings)
+            {
+                r.IsLastReported = r.ReportedAtUtc == lastReportedUtc;
+            }
         }
 
         public async ValueTask DisposeAsync()

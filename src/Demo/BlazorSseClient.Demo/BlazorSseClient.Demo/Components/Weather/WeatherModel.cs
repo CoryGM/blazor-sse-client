@@ -15,7 +15,7 @@ namespace BlazorSseClient.Demo.Components.Weather
         public string? Precipitation { get; init; }
         public DateTime ReportedAtUtc { get; init; } = DateTime.UtcNow;
         public string ReportedAgo { get => ReportedAtUtc.ToReadableDuration(DateTime.UtcNow, 2, LabelStyle.Short); }
-        public bool IsLastReported { get; set; } = true;
         public int ReadingsCount { get; set; } = 0;
+        public bool IsLastReported { get; set; } = true;
     }
 }
