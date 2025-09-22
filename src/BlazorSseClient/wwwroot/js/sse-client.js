@@ -272,14 +272,6 @@ function connect() {
             scheduleReconnect();
         };
 
-        //// Default SSE messages
-        //eventSource.onmessage = e => {
-        //    const type = e.type || 'message';
-        //    const data = e.data;
-        //    const id = e.lastEventId || null;
-
-        //    safeInvoke('OnSseMessage', type, data, id);
-        //};
     } catch (err) {
         console.error('SSE connection setup failed:', err);
         cleanupEventSource();

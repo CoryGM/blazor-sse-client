@@ -165,49 +165,100 @@ namespace BlazorSseClient.Server
 
         private async Task ListenLoopAsync(string url, CancellationToken ct)
         {
-            ChangeConnectionState(SseConnectionState.Opening);
+            // Reconnect/backoff loop
+            var attempt = 0;
 
-            try
+            while (!ct.IsCancellationRequested)
             {
-                using var stream = await _sseStreamClient.GetSseStreamAsync(url, ct).ConfigureAwait(false);
+                ChangeConnectionState(attempt == 0 ? SseConnectionState.Opening : SseConnectionState.Reopening);
 
-                ChangeConnectionState(SseConnectionState.Open);
-
-                await foreach (var item in SseParser.Create(stream).EnumerateAsync(ct))
+                try
                 {
-                    ct.ThrowIfCancellationRequested();
+                    using var stream = await _sseStreamClient.GetSseStreamAsync(url, ct).ConfigureAwait(false);
 
-                    string? eventId = null;
+                    ChangeConnectionState(attempt == 0 ? SseConnectionState.Open : SseConnectionState.Reopened);
 
-                    if (!String.IsNullOrEmpty(item.Data))
+                    attempt = 0; // reset backoff after a successful connection
+
+                    await foreach (var item in SseParser.Create(stream).EnumerateAsync(ct))
                     {
-                        try
+                        ct.ThrowIfCancellationRequested();
+
+                        string? eventId = null;
+
+                        if (!String.IsNullOrEmpty(item.Data))
                         {
-                            using var doc = JsonDocument.Parse(item.Data);
-                            if (doc.RootElement.TryGetProperty("LastEventId", out var p1) && p1.ValueKind == JsonValueKind.String)
-                                eventId = p1.GetString();
+                            try
+                            {
+                                using var doc = JsonDocument.Parse(item.Data);
+                                if (doc.RootElement.TryGetProperty("LastEventId", out var p1) && p1.ValueKind == JsonValueKind.String)
+                                    eventId = p1.GetString();
 
-                            else if (doc.RootElement.TryGetProperty("Id", out var p2) && p2.ValueKind == JsonValueKind.String)
-                                eventId = p2.GetString();
+                                else if (doc.RootElement.TryGetProperty("Id", out var p2) && p2.ValueKind == JsonValueKind.String)
+                                    eventId = p2.GetString();
 
-                            else if (doc.RootElement.TryGetProperty("EventId", out var p3) && p3.ValueKind == JsonValueKind.String)
-                                eventId = p3.GetString();
+                                else if (doc.RootElement.TryGetProperty("EventId", out var p3) && p3.ValueKind == JsonValueKind.String)
+                                    eventId = p3.GetString();
+                            }
+                            catch (JsonException) { /* ignore */ }
                         }
-                        catch (JsonException) { /* ignore */ }
+
+                        var sseEvent = new SseEvent(item.EventType, item.Data, eventId);
+                        _logger?.LogDebug("SSE event received. Id={Id} Type={Type}", sseEvent.Id, sseEvent.EventType);
+                        DispatchOnMessage(sseEvent);
                     }
 
-                    var sseEvent = new SseEvent { EventType = item.EventType, Data = item.Data, Id = eventId };
-                    _logger?.LogDebug("SSE event received. Id={Id} Type={Type}", sseEvent.Id, sseEvent.EventType);
-                    DispatchOnMessage(sseEvent);
+                    // If we exit the foreach without cancellation or exception, treat as end-of-stream
+                    _logger?.LogWarning("SSE stream ended unexpectedly; will attempt to reconnect.");
+                }
+                catch (OperationCanceledException)
+                {
+                    _logger?.LogDebug("SSE listening cancelled.");
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "SSE listening failed; will attempt to reconnect.");
+                }
+
+                // Backoff before reconnect unless stopping
+                if (ct.IsCancellationRequested)
+                    break;
+
+                attempt++;
+                var delayMs = ComputeBackoff(attempt, _options.ReconnectBaseDelayMs, _options.ReconnectMaxDelayMs, _options.ReconnectJitterMs);
+                _logger?.LogInformation("Reconnecting to SSE in {Delay} ms (attempt {Attempt}).", delayMs, attempt);
+
+                try
+                {
+                    await Task.Delay(delayMs, ct).ConfigureAwait(false);
+                }
+                catch (OperationCanceledException)
+                {
+                    break;
                 }
             }
-            catch (OperationCanceledException)
+
+            ChangeConnectionState(SseConnectionState.Closed);
+        }
+
+        private static int ComputeBackoff(int attempt, int baseMs, int maxMs, int jitterMs)
+        {
+            // exponential backoff with cap and jitter
+            try
             {
-                _logger?.LogDebug("SSE listening cancelled.");
+                var exp = checked(baseMs * (1 << Math.Min(attempt - 1, 16))); // cap shift to avoid overflow
+                var capped = Math.Min(exp, maxMs);
+                if (jitterMs > 0)
+                {
+                    var rnd = Random.Shared.Next(0, jitterMs + 1);
+                    capped = Math.Min(maxMs, capped + rnd);
+                }
+                return Math.Max(baseMs, capped);
             }
-            catch (Exception ex)
+            catch
             {
-                _logger?.LogError(ex, "SSE listening failed.");
+                return maxMs; // in overflow scenarios, fall back to max
             }
         }
     }
