@@ -34,6 +34,9 @@ namespace BlazorSseClient.Demo.Api.Weather.Background
             {
                 var weatherUpdate = await _service.GetRandomCurrentWeatherAsync().ConfigureAwait(false);
 
+                if (weatherUpdate is null)
+                    continue;
+
                 await _messageQueueService.PublishAsync("Weather", weatherUpdate).ConfigureAwait(false);
                 
                 _logger.LogInformation("Enqueued weather update: {Message}", JsonSerializer.Serialize(weatherUpdate));

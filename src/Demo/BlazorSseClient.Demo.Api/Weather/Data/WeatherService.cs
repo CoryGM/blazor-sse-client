@@ -64,9 +64,9 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                     ReadingNumber = 1
                 };
 
-                AddToCache(reading);
+                var cachedReading = AddToCache(reading);
 
-                return reading;
+                return cachedReading;
             }
             catch (Exception exception)
             {
@@ -124,12 +124,12 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
             return null;
         }
 
-        private void AddToCache(CurrentWeather weather)
+        private CurrentWeather? AddToCache(CurrentWeather weather)
         {
             var key = GetNormalizedKeyName(weather.City);
 
             if (String.IsNullOrEmpty(key))
-                return;
+                return null;
 
             if (_weatherCache.TryGetValue(key, out List<CurrentWeather>? value))
             {
@@ -138,7 +138,7 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                 if (value.Count == 0)
                 {
                     value.Add(weather);
-                    return;
+                    return null;
                 }
 
                 var maxReadingNumber = value.Count > 0 ? value.Max(x => x.ReadingNumber) : 0;
@@ -148,11 +148,14 @@ namespace BlazorSseClient.Demo.Api.Weather.Data
                 // Keep only the latest 25 entries
                 while (value.Count > 25)
                     value.RemoveAt(0);
+
+                return newWeatherRecord;
             }
             else
             {
                 _weatherCache[key] = [];
                 _weatherCache[key].Add(weather);
+                return weather;
             }
         }
 

@@ -9,6 +9,9 @@ namespace BlazorSseClient.Demo.Components.Weather
         [Inject]
         private ISseClient SseClient { get; set; } = null!;
 
+        [Inject]
+        private HttpClient HttpClient { get; set; } = null!;
+
         private readonly List<WeatherModel> _readings = [];
         private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
         private Guid? _weatherSubscriptionId;
@@ -33,7 +36,7 @@ namespace BlazorSseClient.Demo.Components.Weather
         {
             if (firstRender)
             {
-                _readings.Clear(); // Optional: clear any server-side data
+                await GetMostRecentReadingsAsync();
                 _weatherSubscriptionId = SseClient.Subscribe(_messageType, AddReading);
             }
         }
@@ -73,7 +76,8 @@ namespace BlazorSseClient.Demo.Components.Weather
                     WindDirection = currentWeather?.WindDirection ?? "N/A",
                     WindGusts = currentWeather?.WindGusts ?? "N/A",
                     Precipitation = currentWeather?.Precipitation ?? "N/A",
-                    ReadingsCount = 0
+                    ReadingNumber = currentWeather?.ReadingNumber ?? 1,
+                    ReportedAtUtc = currentWeather?.TakenAtUtc ?? DateTime.UtcNow
                 };
 
                 AddReading(reading);
@@ -111,6 +115,22 @@ namespace BlazorSseClient.Demo.Components.Weather
             {
                 r.IsLastReported = r.ReportedAtUtc == lastReportedUtc;
             }
+        }
+
+        private async Task GetMostRecentReadingsAsync()
+        {
+            var response = await HttpClient.GetAsync("api/weather/readings/most-recent");
+
+            if (!response.IsSuccessStatusCode)
+                return;
+
+            var readings = await response.Content.ReadFromJsonAsync<List<WeatherModel>>(_jsonOptions);
+
+            if (readings is null || readings.Count == 0)
+                return;
+
+            foreach (var reading in readings)
+                AddReading(reading);
         }
 
         public async ValueTask DisposeAsync()
