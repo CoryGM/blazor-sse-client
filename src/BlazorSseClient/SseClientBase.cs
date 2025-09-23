@@ -162,7 +162,7 @@ namespace BlazorSseClient
         {
             if (sseMessage is null) return;
 
-            Console.WriteLine($"Received SSE Message: {clientSource} - {sseMessage.Value.EventType} - {sseMessage.Value.Data}");
+            _logger?.LogTrace("SSE Dispatch: Source={Source} Type={Type}", clientSource, sseMessage.Value.EventType);
 
             var tasks = new List<Task>(2) { _allEvents.InvokeAsync(sseMessage.Value) };
 
