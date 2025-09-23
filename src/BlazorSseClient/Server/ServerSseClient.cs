@@ -210,15 +210,20 @@ namespace BlazorSseClient.Server
 
                     // If we exit the foreach without cancellation or exception, treat as end-of-stream
                     _logger?.LogWarning("SSE stream ended unexpectedly; will attempt to reconnect.");
+
+                    // transition to Closed between attempts
+                    ChangeConnectionState(SseConnectionState.Closed);
                 }
                 catch (OperationCanceledException)
                 {
                     _logger?.LogDebug("SSE listening cancelled.");
+                    ChangeConnectionState(SseConnectionState.Closed);
                     break;
                 }
                 catch (Exception ex)
                 {
                     _logger?.LogError(ex, "SSE listening failed; will attempt to reconnect.");
+                    ChangeConnectionState(SseConnectionState.Closed);
                 }
 
                 // Backoff before reconnect unless stopping
@@ -226,7 +231,9 @@ namespace BlazorSseClient.Server
                     break;
 
                 attempt++;
+
                 var delayMs = ComputeBackoff(attempt, _options.ReconnectBaseDelayMs, _options.ReconnectMaxDelayMs, _options.ReconnectJitterMs);
+                
                 _logger?.LogInformation("Reconnecting to SSE in {Delay} ms (attempt {Attempt}).", delayMs, attempt);
 
                 try
@@ -235,10 +242,12 @@ namespace BlazorSseClient.Server
                 }
                 catch (OperationCanceledException)
                 {
+                    ChangeConnectionState(SseConnectionState.Closed);
                     break;
                 }
             }
 
+            // final state
             ChangeConnectionState(SseConnectionState.Closed);
         }
 
