@@ -125,32 +125,37 @@ namespace BlazorSseClient
         {
             queryParameters ??= [];
 
-            if (String.IsNullOrWhiteSpace(defaultUrl))
-                defaultUrl = String.Empty;
-
+            // If no override, return the default as-is
             if (String.IsNullOrWhiteSpace(url))
                 return defaultUrl;
 
+            // Absolute URL wins
             if (url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) ||
                 url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
-                return url;
+                return AppendQuery(url, queryParameters);
 
+            // If there's no default/base, just use the relative url
             if (String.IsNullOrWhiteSpace(defaultUrl))
+                return AppendQuery(url, queryParameters);
+
+            // Combine base and relative with exactly one slash
+            var basePart = defaultUrl.TrimEnd('/');
+            var relPart = url.TrimStart('/');
+            var combined = $"{basePart}/{relPart}";
+
+            return AppendQuery(combined, queryParameters);
+        }
+
+        private static string AppendQuery(string url, Dictionary<string, string> queryParameters)
+        {
+            if (queryParameters.Count == 0)
                 return url;
 
-            // Make sure we don't end up with a double-slash
-            var newUrl = $"{(defaultUrl.EndsWith('/') ? defaultUrl + url.TrimEnd('/') : defaultUrl)}" +
-                         "//" +
-                         $"{(url.StartsWith('/') ? url.TrimStart('/') : url)}";
-
-            if (queryParameters.Count == 0)
-                return newUrl;
-
-            var sep = newUrl.Contains('?') ? '&' : '?';
-            var queryParams = String.Join('&', queryParameters.Select(kv =>
+            var sep = url.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+            var query = string.Join('&', queryParameters.Select(kv =>
                 $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
-            return $"{newUrl}{sep}{queryParams}";
+            return $"{url}{sep}{query}";
         }
 
         internal async Task DispatchOnMessageAsync(SseClientSource clientSource, SseEvent? sseMessage)
