@@ -79,9 +79,7 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
             await InternalStopAsync().ConfigureAwait(false);
         }
 
-        _currentUrl = effectiveUrl;
-
-        _logger?.LogInformation("Starting SSE connection to {CurrentUrl}", _currentUrl);
+        _logger?.LogInformation("Starting SSE connection to {CurrentUrl}", effectiveUrl);
 
         var payload = new
         {
@@ -98,7 +96,26 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
             throw new InvalidOperationException("JS module not available.");
         }
 
-        await _module.InvokeVoidAsync("startSse", _currentUrl, _objRef, payload).ConfigureAwait(false);
+        // reflect that we are trying to open; JS will update states on success
+        DispatchRunStateChange(SseRunState.Starting);
+        DispatchConnectionStateChange(SseConnectionState.Opening);
+
+        try
+        {
+            await _module.InvokeVoidAsync("startSse", effectiveUrl, _objRef, payload).ConfigureAwait(false);
+            _currentUrl = effectiveUrl; // only set on successful start call
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "startSse failed.");
+            _currentUrl = null;
+
+            // Return to a safe state so callers/UI don’t think we’re running
+            DispatchConnectionStateChange(SseConnectionState.Closed);
+            DispatchRunStateChange(SseRunState.Stopped);
+
+            throw; // allow caller to observe failure, but future starts are still possible
+        }
     }
 
     public override Guid Subscribe(string eventType, Action<SseEvent> handler, CancellationToken cancellationToken = default)
@@ -215,6 +232,14 @@ public sealed class WasmSseClient : SseClientBase, ISseClient
         catch (Exception ex)
         {
             _logger?.LogError(ex, "JS module import failed.");
+
+            // Reset the guard so future calls can retry import
+            lock (_moduleLock)
+            {
+                _moduleTask = null;
+                _module = null;
+            }
+
             // propagate so callers (StartAsync) see the failure
             throw;
         }

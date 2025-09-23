@@ -20,6 +20,15 @@ namespace BlazorSseClient.Demo.Client.Stocks
         private Guid? _quoteSubscriptionId; 
         private const string _messageType = "Quote";
         private readonly List<string> _availableSymbols = [];
+        private string renderLocation = String.Empty;
+
+        protected override void OnInitialized()
+        {
+            if (OperatingSystem.IsBrowser())
+                renderLocation = "Browser";
+            else
+                renderLocation = "Server";
+        }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -34,6 +43,11 @@ namespace BlazorSseClient.Demo.Client.Stocks
 
         private void AddQuote(SseEvent sseEvent)
         {
+            if (OperatingSystem.IsBrowser())
+                renderLocation = "Browser";
+            else
+                renderLocation = "Server";
+
             if (sseEvent.Data is null)
                 return;
 

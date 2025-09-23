@@ -249,11 +249,13 @@ namespace BlazorSseClient.Server
             {
                 var exp = checked(baseMs * (1 << Math.Min(attempt - 1, 16))); // cap shift to avoid overflow
                 var capped = Math.Min(exp, maxMs);
+
                 if (jitterMs > 0)
                 {
                     var rnd = Random.Shared.Next(0, jitterMs + 1);
                     capped = Math.Min(maxMs, capped + rnd);
                 }
+
                 return Math.Max(baseMs, capped);
             }
             catch
