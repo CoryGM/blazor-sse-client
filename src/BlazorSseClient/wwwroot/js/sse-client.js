@@ -143,7 +143,7 @@ function detachAllSubscriptions() {
         try {
             eventSource.removeEventListener(messageType, listener);
         } catch (e) {
-            // ignore
+            if (cfg.debug) console.debug(`Failed to detach listener for "${messageType}":`, e);
         }
     }
 }
@@ -191,7 +191,7 @@ export function unsubscribe(messageType) {
         try {
             eventSource.removeEventListener(messageType, listener);
         } catch (e) {
-            // ignore
+            if (cfg.debug) console.debug(`Failed to attach listener for "${messageType}":`, e);
         }
     }
 

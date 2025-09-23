@@ -106,6 +106,7 @@ namespace BlazorSseClient
         private Guid AddCore(WeakReference<object>? targetRef, Func<object?, SseEvent, ValueTask> invoker, CancellationToken token)
         {
             var id = Guid.NewGuid();
+
             _map[id] = new Entry { TargetRef = targetRef, Invoker = invoker };
 
             if (token.CanBeCanceled)
