@@ -14,7 +14,7 @@
             var awayScore = GetScore(sport);
             var progress = GetProgress(sport);
 
-            return new Score(sport, homeTeam, awayTeam, homeScore, awayScore, progress);
+            return new Score(Guid.CreateVersion7(), sport, homeTeam, awayTeam, homeScore, awayScore, progress);
         }
 
         public Score GetRandomScore()
@@ -60,7 +60,7 @@
         {
             return sport switch
             {
-                "Basketball" => Random.Shared.Next(80, 130),
+                "Basketball" => Random.Shared.Next(40, 130),
                 "Baseball" => Random.Shared.Next(0, 12),
                 "Hockey" => Random.Shared.Next(0, 7),
                 "Tennis" => Random.Shared.Next(0, 3),

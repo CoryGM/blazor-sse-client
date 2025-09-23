@@ -1,0 +1,21 @@
+﻿.marquee-wrapper {
+    width: 100%;
+    height: 2.5rem;
+    position: relative;
+}
+
+.marquee-track {
+    white-space: nowrap;
+    animation: scroll-left linear infinite;
+    animation-duration: 30s; /* Adjust based on content length */
+}
+
+@keyframes scroll-left {
+    from {
+        transform: translateX(100%);
+    }
+
+    to {
+        transform: translateX(-100%);
+    }
+}

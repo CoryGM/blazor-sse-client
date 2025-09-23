@@ -17,7 +17,7 @@ namespace BlazorSseClient.Demo.Components.Weather
         private Guid? _weatherSubscriptionId;
         private const string _messageType = "Weather";
         private System.Timers.Timer? _timer;
-        private string renderLocation = "Server";
+        private string _renderLocation = "Server";
 
         protected override void OnInitialized()
         {
@@ -27,9 +27,9 @@ namespace BlazorSseClient.Demo.Components.Weather
             _timer.Enabled = true;
 
             if (OperatingSystem.IsBrowser())
-                renderLocation = "Browser";
+                _renderLocation = "Browser";
             else
-                renderLocation = "Server";
+                _renderLocation = "Server";
         }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -45,12 +45,12 @@ namespace BlazorSseClient.Demo.Components.Weather
         {
             if (OperatingSystem.IsBrowser())
             {
-                renderLocation = "Browser";
+                _renderLocation = "Browser";
                 Console.WriteLine($"AddReading() executing in Browser.");
             }
             else
             {
-                renderLocation = "Server";
+                _renderLocation = "Server";
                 Console.WriteLine($"AddReading() executing on Server.");
             }
 
@@ -143,8 +143,6 @@ namespace BlazorSseClient.Demo.Components.Weather
                 SseClient.Unsubscribe(_messageType, _weatherSubscriptionId.Value);
                 _weatherSubscriptionId = null;
             }
-
-            Console.WriteLine("Weather component is being disposed (async).");
         }
     }
 }

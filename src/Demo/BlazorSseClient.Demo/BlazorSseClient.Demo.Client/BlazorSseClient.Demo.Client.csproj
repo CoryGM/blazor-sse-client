@@ -20,10 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="SportsScores\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\..\..\BlazorSseClient\BlazorSseClient.csproj" />
     <ProjectReference Include="..\..\BlazorSseClient.Demo.Shared\BlazorSseClient.Demo.Shared.csproj" />
   </ItemGroup>
