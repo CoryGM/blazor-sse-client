@@ -20,7 +20,7 @@ namespace BlazorSseClient.Demo.Client.SportsScores
     /// - ItemSpacingMs: Minimum time between items starting their journey
     /// - ItemDurationMs: Total time for an item to scroll across the screen
     /// </summary>
-    public partial class ScoreBanner : ComponentBase, IAsyncDisposable
+    public partial class ScoreMarqueeContainer : ComponentBase, IAsyncDisposable
     {
         [Inject]
         private ISseClient SseClient { get; set; } = null!;

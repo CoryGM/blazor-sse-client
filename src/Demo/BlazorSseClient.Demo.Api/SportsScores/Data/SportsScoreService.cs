@@ -6,10 +6,19 @@
 
         public Score GetScoreForSport(string sport)
         {
+            string homeTeam;
+            string awayTeam;
+
             if (!_sports.Contains(sport, StringComparer.OrdinalIgnoreCase))
                 sport = "Football";
 
-            var (homeTeam, awayTeam) = Teams.GetRandomMatchup();
+
+
+            if (sport.Equals("Tennis", StringComparison.OrdinalIgnoreCase))
+                (homeTeam, awayTeam) = Names.GetRandomMatchup();
+            else
+                (homeTeam, awayTeam) = Teams.GetRandomMatchup();
+
             var homeScore = GetScore(sport);
             var awayScore = GetScore(sport);
             var progress = GetProgress(sport);
@@ -35,11 +44,11 @@
 
             return sport switch
             {
-                "Basketball" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 4))} Quarter",
-                "Baseball" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 9))} Inning",
-                "Hockey" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 3))} Period",
+                "Basketball" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 4))} Qtr",
+                "Baseball" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 9))} Inn",
+                "Hockey" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 3))} period",
                 "Tennis" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 5))} Set",
-                "Football" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 4))} Quarter",
+                "Football" => $"{GetWithNumericSuffix(Random.Shared.Next(1, 4))} Qtr",
                 "Soccer" => $"{Random.Shared.Next(1, 90)}'",
                 _ => "In Progress"
             };
