@@ -21,8 +21,7 @@ jobs:
        dotnet-version: '9.0.x'
 
    - name: Build project
-     run: dotnet build /src/BlazorSseClient/BlazorSseClient.csproj --configuration Release
-     working-directory: ${{ github.workspace }}
+     run: dotnet build "${{ github.workspace }}/src/BlazorSseClient/BlazorSseClient.csproj" --configuration Release
 
    - name: Create package
      run: dotnet pack --configuration Release
