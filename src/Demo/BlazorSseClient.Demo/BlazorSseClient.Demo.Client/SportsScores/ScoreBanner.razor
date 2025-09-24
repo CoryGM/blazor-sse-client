@@ -3,11 +3,16 @@
 @rendermode InteractiveWebAssembly
 @namespace BlazorSseClient.Demo.Client.SportsScores
 
-<div class="marquee-wrapper overflow-hidden position-relative">
-    <div class="marquee-track d-inline-flex gap-4">
-        @foreach (var score in _scores)
+<div class="conveyor-belt-container">
+    <div class="conveyor-belt-track">
+        @foreach (var item in GetActiveItems())
         {
-            <Score ScoreModel="score" />
+            <div class="conveyor-belt-item" 
+                 @key="item.ItemId"
+                 data-item-id="@item.ItemId"
+                 style="animation-delay: @(GetAnimationDelay(item))ms">
+                <Score ScoreModel="item.Score" />
+            </div>
         }
     </div>
 </div>
