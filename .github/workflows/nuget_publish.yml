@@ -1,8 +1,13 @@
 name: Publish to NuGet
+
 on:
- push:
-   branches:
-     - master
+  push:
+    branches:
+      - main
+  
+  # Allow mannually trigger 
+  workflow_dispatch: 
+     
 jobs:
  publish:
    runs-on: ubuntu-latest
