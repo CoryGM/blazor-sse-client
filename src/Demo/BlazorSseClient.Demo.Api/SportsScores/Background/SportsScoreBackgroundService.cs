@@ -29,7 +29,7 @@ namespace BlazorSseClient.Demo.Api.SportsScores.Background
         {
             _logger.LogInformation("SportsScoresBackgroundService is running.");
 
-            // Simulate sending sports scores every 5 seconds
+            // Simulate sending sports scores every 3 seconds
             while (!stoppingToken.IsCancellationRequested)
             {
                 var scoreUpdate = _service.GetRandomScore();
@@ -38,7 +38,7 @@ namespace BlazorSseClient.Demo.Api.SportsScores.Background
                 
                 _logger.LogInformation("Enqueued sports score update: {Message}", JsonSerializer.Serialize(scoreUpdate));
                 
-                await Task.Delay(TimeSpan.FromSeconds(Random.Shared.Next(5, 9)), stoppingToken);
+                await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
             }
 
             _logger.LogInformation("SportsScoresBackgroundService is stopping.");

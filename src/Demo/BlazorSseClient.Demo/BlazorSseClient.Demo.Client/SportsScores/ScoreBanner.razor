@@ -7,10 +7,7 @@
     <div class="marquee-track d-inline-flex gap-4">
         @foreach (var score in _scores)
         {
-            <div class="score-item text-nowrap">
-                <span class="fw-bold">@score.HomeTeam</span> @score.HomeScore -
-                <span class="fw-bold">@score.AwayTeam</span> @score.AwayScore
-            </div>
+            <Score ScoreModel="score" />
         }
     </div>
 </div>

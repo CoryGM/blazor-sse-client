@@ -38,12 +38,15 @@ namespace BlazorSseClient.Demo.Client.SportsScores
                 if (_scores.Any(q => q.Id == quote.Value.Id))
                     return;
 
-                _scores.Add(quote.Value);
+                //if (_scores.Count < 3)
+                //{
+                    _scores.Add(quote.Value);
 
-                if (_scores.Count > 10)
-                    _scores.RemoveAt(0);
+                    if (_scores.Count > 10)
+                        _scores.RemoveAt(0);
 
-                InvokeAsync(StateHasChanged);
+                    InvokeAsync(StateHasChanged);
+                //}
             }
             catch (JsonException)
             {
