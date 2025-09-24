@@ -43,14 +43,23 @@ namespace BlazorSseClient.Demo.Client.SportsScores
         private Guid? _scoreSubscriptionId;
         
         // Configuration - adjust these values to change belt behavior
-        private const int ItemSpacingMs = 2200; // 2.2 seconds between items starting
-        private const int ItemDurationMs = 12000; // 12 seconds for full scroll across
-        private const int CleanupBufferMs = 1000; // Extra time before removing items from memory (increased for safety)
+        private const int _itemSpacingMs = 2200; // 2.2 seconds between items starting
+        private const int _itemDurationMs = 12000; // 12 seconds for full scroll across
+        private const int _cleanupBufferMs = 1000; // Extra time before removing items from memory (increased for safety)
         
         private int _nextItemId = 0;
         private IJSObjectReference? _jsModule;
         private readonly object _lockObject = new();
         private long _lastItemStartTime = 0;
+        private string _renderLocation = String.Empty;
+
+        protected override void OnInitialized()
+        {
+            if (OperatingSystem.IsBrowser())
+                _renderLocation = "Browser";
+            else
+                _renderLocation = "Server";
+        }
 
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
@@ -122,7 +131,7 @@ namespace BlazorSseClient.Demo.Client.SportsScores
                 {
                     var elapsed = currentTime - item.StartTime;
                     var wasExpired = item.IsExpired;
-                    item.IsExpired = elapsed >= ItemDurationMs;
+                    item.IsExpired = elapsed >= _itemDurationMs;
                     
                     if (!wasExpired && item.IsExpired)
                     {
@@ -136,7 +145,7 @@ namespace BlazorSseClient.Demo.Client.SportsScores
                 {
                     if (!item.IsExpired) return false;
                     var elapsed = currentTime - item.StartTime;
-                    return elapsed >= (ItemDurationMs + CleanupBufferMs);
+                    return elapsed >= (_itemDurationMs + _cleanupBufferMs);
                 }).ToList();
 
                 if (itemsToRemove.Count > 0)
@@ -152,7 +161,7 @@ namespace BlazorSseClient.Demo.Client.SportsScores
                 // Add new items to the belt if conditions are met
                 var timeSinceLastStart = currentTime - _lastItemStartTime;
                 var canAddNewItem = _incomingScores.Count > 0 && 
-                    (_lastItemStartTime == 0 || timeSinceLastStart >= ItemSpacingMs);
+                    (_lastItemStartTime == 0 || timeSinceLastStart >= _itemSpacingMs);
 
                 if (canAddNewItem)
                 {
