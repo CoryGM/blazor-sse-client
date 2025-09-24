@@ -11,7 +11,6 @@ on:
 jobs:
  publish:
    runs-on: ubuntu-latest
-
    steps:
    - uses: actions/checkout@v2
   
@@ -21,10 +20,13 @@ jobs:
        dotnet-version: '9.0.x'
 
    - name: Build project
-     run: dotnet build "${{ github.workspace }}/src/BlazorSseClient/BlazorSseClient.csproj" --configuration Release
+     run: dotnet build src/BlazorSseClient/BlazorSseClient.csproj --configuration Release
 
    - name: Create package
-     run: dotnet pack --configuration Release
+     run: dotnet pack src/BlazorSseClient/BlazorSseClient.csproj --configuration Release
 
-   - name: Publish package to NuGet
-     run: dotnet nuget push bin/Release/*.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json
+   - name: Publish main package to NuGet
+     run: dotnet nuget push src/BlazorSseClient/bin/Release/*.nupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+   - name: Publish symbols package to NuGet
+     run: dotnet nuget push src/BlazorSseClient/bin/Release/*.snupkg --api-key ${{secrets.NUGET_API_KEY}} --source https://api.nuget.org/v3/index.json --skip-duplicate
