@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.Demo.Client
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.AppHost", "BlazorSseClient.AppHost\BlazorSseClient.AppHost.csproj", "{DC521622-3B1A-4B4F-9836-2A7A44A1252E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.ServiceDefaults", "BlazorSseClient.ServiceDefaults\BlazorSseClient.ServiceDefaults.csproj", "{BD566F1B-6F9F-BF88-D117-BB86BAC1D707}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.Demo.ServiceDefaults", "Demo\BlazorSseClient.Demo.ServiceDefaults\BlazorSseClient.Demo.ServiceDefaults.csproj", "{BD566F1B-6F9F-BF88-D117-BB86BAC1D707}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demo", "Demo", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
@@ -23,9 +23,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demo API", "Demo API", "{7F
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{493BEF18-1048-43AF-B2FC-22B425F2E140}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.Demo.Tests", "BlazorSseClient.Demo.Tests\BlazorSseClient.Demo.Tests.csproj", "{9BE67461-1783-4C4F-8B7C-86DD5326B66F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.Demo.Tests", "Demo\BlazorSseClient.Demo.Tests\BlazorSseClient.Demo.Tests.csproj", "{9BE67461-1783-4C4F-8B7C-86DD5326B66F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.Demo.Shared.Tests", "Blazor.Demo.Shared.Tests\BlazorSseClient.Demo.Shared.Tests.csproj", "{9ABEBF6A-4443-432F-B264-CE1740CB4815}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.Demo.Shared.Tests", "Demo\BlazorSSeClient.Demo.Shared.Tests\BlazorSseClient.Demo.Shared.Tests.csproj", "{9ABEBF6A-4443-432F-B264-CE1740CB4815}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

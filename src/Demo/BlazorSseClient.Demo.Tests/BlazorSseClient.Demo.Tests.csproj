@@ -12,7 +12,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Demo\BlazorSseClient.Demo.Shared\BlazorSseClient.Demo.Shared.csproj" />
+    <ProjectReference Include="..\BlazorSseClient.Demo\BlazorSseClient.Demo\BlazorSseClient.Demo.csproj" />
   </ItemGroup>
 
   <ItemGroup>
