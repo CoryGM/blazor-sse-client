@@ -1,0 +1,11 @@
+﻿@page "/scores"
+@namespace BlazorSseClient.Demo.Client.SportsScores
+
+<PageTitle>Sports Scores</PageTitle>
+
+
+<h2>Sports Scores</h2>
+
+<ScoreMarqueeContainer @rendermode="InteractiveServer" />
+
+<ScoreMarqueeContainer @rendermode="InteractiveWebAssembly" />

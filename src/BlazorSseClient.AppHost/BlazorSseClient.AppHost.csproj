@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.2.1" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>1a6bdf7c-67a5-4d5c-9edc-6ea605f33f7e</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Demo\BlazorSseClient.Demo.Api\BlazorSseClient.Demo.Api.csproj" />
+    <ProjectReference Include="..\Demo\BlazorSseClient.Demo\BlazorSseClient.Demo\BlazorSseClient.Demo.csproj" />
+  </ItemGroup>
+
+</Project>

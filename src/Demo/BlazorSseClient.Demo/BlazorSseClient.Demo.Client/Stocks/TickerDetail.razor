@@ -1,0 +1,71 @@
+﻿<div class="card mb-3" style="width: 18rem;">
+    <div class="card-body">
+        <h4 class="card-title">@Symbol</h4>
+        <p class="card-text">
+
+        @if (Quotes is not null)
+        {
+            <table class="table table-sm">
+                <tbody>
+                @foreach (var (quote, index) in DisplayQuotes.Select((value, index) => (value, index)))
+                {
+                    <tr>
+                        <td>
+                            @if (quote.Timestamp == LastUpdated)
+                            {
+                                <i class="bi bi-1-square-fill"></i>
+                            }
+                            else
+                            {
+                                <i class="@($"bi bi-{index + 1}-square") text-secondary"></i>
+                            }
+                        </td>
+                        <td>@($"{quote.Price:C}")</td>
+
+                        @if (quote.Change > 0)
+                        {
+                            <td class="text-success text-end">@($"{quote.Change:C}") <i class="bi bi-caret-up-fill"></i></td>
+                        }
+                        else if (quote.Change < 0)
+                        {
+                            <td class="text-danger text-end">@($"{quote.Change:C}") <i class="bi bi-caret-down-fill"></i></td>
+                        }
+                        else
+                        {
+                            <td>&#8212;</td>
+                        }
+                    </tr>
+                }
+                @foreach (var fillerLine in FillerLines)
+                {
+                    <tr>
+                        <td colspan="3">
+                        @if (String.IsNullOrWhiteSpace(fillerLine))
+                        {
+                            @:&nbsp;                                        
+                        }
+                            <em>@fillerLine</em>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+                
+            </table>
+        }
+        else
+        {
+            <em>No quotes received yet...</em>
+        }
+        </p>
+
+        @if (LastUpdated.HasValue)
+        {
+            <p class="card-text"><small class="text-muted">Last updated: @LastUpdated.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</small></p>
+        }
+        else
+        {
+            <p class="card-text"><small class="text-muted">Last updated: None reported</small></p>
+        }
+    </div>
+</div>
+

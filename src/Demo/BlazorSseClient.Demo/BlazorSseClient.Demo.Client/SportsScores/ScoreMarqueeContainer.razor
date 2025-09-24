@@ -1,0 +1,24 @@
+﻿@namespace BlazorSseClient.Demo.Client.SportsScores
+
+<h4 class="render-location-header">@_renderLocation Rendered</h4>
+
+<div class="conveyor-belt-container">
+    <div class="conveyor-belt-track">
+        @foreach (var item in GetActiveItems())
+        {
+            <div class="conveyor-belt-item" 
+                 @key="item.ItemId"
+                 data-item-id="@item.ItemId"
+                 style="animation-delay: @(GetAnimationDelay(item))ms">
+                <Score ScoreModel="item.Score" />
+            </div>
+        }
+    </div>
+</div>
+
+
+
+
+
+
+

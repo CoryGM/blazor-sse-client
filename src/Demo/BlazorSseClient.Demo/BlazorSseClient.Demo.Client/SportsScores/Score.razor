@@ -1,0 +1,18 @@
+﻿<div class="score-container">
+    <div class="sport-icon">
+        @_sportIcon
+    </div>
+    <div class="team-scores-container">
+        <div class="team-score-row home">
+            <span class="team-name">@ScoreModel.HomeTeam</span>
+            <span class="score">@ScoreModel.HomeScore</span>
+        </div>
+        <div class="team-score-row away">
+            <span class="team-name">@ScoreModel.AwayTeam</span>
+            <span class="score">@ScoreModel.AwayScore</span>
+        </div>
+    </div>
+    <div class="progress">
+        @ScoreModel.Progress
+    </div>
+</div>

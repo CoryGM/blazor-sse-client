@@ -1,0 +1,68 @@
+﻿@page "/weather"
+
+@rendermode InteractiveServer
+
+@namespace BlazorSseClient.Demo.Components.Weather
+
+<PageTitle>Weather</PageTitle>
+
+<h2>Weather - @_renderLocation Rendered</h2>
+<p>
+    This component demonstrates the use of Server-Sent Events (SSE) 
+    in a Blazor Server component to receive real-time weather updates 
+    from the server. A new reading is sent every 10 seconds.
+</p>
+
+<p>Cities Reporting: @_readings.Count</p>
+
+@if (_readings == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th></th>
+                <th>City</th>
+                <td></td>
+                <th>Temp (F)</th>
+                <th>Humidity</th>
+                <th>Wind</th>
+                <th>Precip</th>
+                <th>Readings</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var reading in _readings)
+            {
+                <tr class="@(reading.IsLastReported ? "table-success" : null)">
+                    <td>
+                        @if (reading.IsLastReported)
+                        {
+                            <i class="bi bi-caret-right-fill text-success"></i>
+                        }
+                    </td>
+                    <td>@reading.City</td>
+                    <td>@if (reading.IsDayTime)
+                        {
+                            <i class="bi bi-brightness-high text-warning"></i>
+                        } 
+                        else
+                        {
+                            <i class="bi bi-moon"></i>
+                        }
+                    </td>
+                            <td>@reading.Temperature / @reading.ApparentTemperature</td>
+                    <td>@reading.RelativeHumidity</td>
+                    <td>@reading.WindSpeed (@reading.WindGusts) @reading.WindDirection</td>
+                    <td>@reading.Precipitation</td>
+                    <td>@reading.ReadingNumber</td>
+                    <td>@reading.ReportedAgo</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

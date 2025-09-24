@@ -1,0 +1,22 @@
+﻿@page "/stocks"
+
+@rendermode InteractiveWebAssembly
+
+<PageTitle>Stocks</PageTitle>
+
+
+<h2>Stocks - @_renderLocation Rendered</h2>
+
+@if (_quoteCache.Any())
+{
+    <div class="row">
+
+    @foreach (var symbol in _availableSymbols)
+    {
+        <div class="col-3">
+            <TickerDetail Symbol="@symbol" Quotes="@_quoteCache[symbol]" />
+        </div>
+    }
+
+    </div>
+}

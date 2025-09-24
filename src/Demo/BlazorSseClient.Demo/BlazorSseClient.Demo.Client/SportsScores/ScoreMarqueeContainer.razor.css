@@ -1,0 +1,277 @@
+﻿.render-location-header {
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+.conveyor-belt-container {
+    width: 100%;
+    height: 68px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-top: 2px solid #3b82f6;
+    border-bottom: 2px solid #3b82f6;
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.1),
+        0 4px 8px rgba(0, 0, 0, 0.1);
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    /* Enable hardware acceleration for better performance */
+    transform: translateZ(0);
+    contain: layout style paint;
+}
+
+.conveyor-belt-container::before {
+    content: "LIVE SCORES";
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    z-index: 10;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    animation: live-indicator 2s ease-in-out infinite;
+}
+
+.conveyor-belt-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        rgba(30, 41, 59, 0.9) 0%,
+        rgba(30, 41, 59, 0.7) 110px,
+        transparent 180px,
+        transparent calc(100% - 180px),
+        rgba(30, 41, 59, 0.7) calc(100% - 110px),
+        rgba(30, 41, 59, 0.9) 100%
+    );
+    pointer-events: none;
+    z-index: 5;
+}
+
+.conveyor-belt-track {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    /* Optimize for animations */
+    contain: layout style paint;
+}
+
+.conveyor-belt-item {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    animation: scroll-across 12s linear forwards;
+    /* Start items off-screen to the right */
+    left: 100%;
+    /* Performance optimizations */
+    will-change: transform, left, opacity;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
+    /* Improve sub-pixel rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* Ensure each item maintains its own layer */
+    z-index: 1;
+    /* Prevent layout shifts during removal */
+    contain: layout style paint;
+}
+
+/* Stagger items that start at the same time to prevent overlap */
+.conveyor-belt-item:nth-child(1) { z-index: 4; }
+.conveyor-belt-item:nth-child(2) { z-index: 3; }
+.conveyor-belt-item:nth-child(3) { z-index: 2; }
+.conveyor-belt-item:nth-child(n+4) { z-index: 1; }
+
+@keyframes scroll-across {
+    from {
+        left: 100%;
+        opacity: 0;
+        transform: translateY(-50%) translateZ(0);
+    }
+    1% {
+        opacity: 1;
+    }
+    99% {
+        opacity: 1;
+    }
+    to {
+        left: -450px; /* Move completely off-screen to the left */
+        opacity: 0;
+        transform: translateY(-50%) translateZ(0);
+        /* Ensure item is completely hidden at the end */
+        visibility: hidden;
+    }
+}
+
+@keyframes live-indicator {
+    0%, 100% { 
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    50% { 
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+    }
+}
+
+/* Breaking news variant */
+.conveyor-belt-container.breaking-news {
+    background: linear-gradient(135deg, #991b1b 0%, #dc2626 100%);
+    border-color: #fbbf24;
+}
+
+.conveyor-belt-container.breaking-news::before {
+    content: "BREAKING";
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    color: #991b1b;
+    font-weight: 800;
+}
+
+.conveyor-belt-container.breaking-news::after {
+    background: linear-gradient(90deg, 
+        rgba(153, 27, 27, 0.9) 0%,
+        rgba(153, 27, 27, 0.7) 110px,
+        transparent 180px,
+        transparent calc(100% - 180px),
+        rgba(153, 27, 27, 0.7) calc(100% - 110px),
+        rgba(153, 27, 27, 0.9) 100%
+    );
+}
+
+/* Live updates variant */
+.conveyor-belt-container.live-updates {
+    border-color: #059669;
+}
+
+.conveyor-belt-container.live-updates::before {
+    content: "LIVE SCORES";
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .conveyor-belt-container {
+        height: 60px;
+        border-width: 1px;
+    }
+    
+    .conveyor-belt-container::before {
+        left: 12px;
+        font-size: 9px;
+        padding: 2px 6px;
+    }
+    
+    .conveyor-belt-container::after {
+        background: linear-gradient(90deg, 
+            rgba(30, 41, 59, 0.9) 0%,
+            rgba(30, 41, 59, 0.7) 90px,
+            transparent 140px,
+            transparent calc(100% - 140px),
+            rgba(30, 41, 59, 0.7) calc(100% - 90px),
+            rgba(30, 41, 59, 0.9) 100%
+        );
+    }
+    
+    @keyframes scroll-across {
+        from {
+            left: 100%;
+            opacity: 0;
+            transform: translateY(-50%) translateZ(0);
+        }
+        1% {
+            opacity: 1;
+        }
+        99% {
+            opacity: 1;
+        }
+        to {
+            left: -350px; /* Smaller offset for mobile but still adequate */
+            opacity: 0;
+            transform: translateY(-50%) translateZ(0);
+            visibility: hidden;
+        }
+    }
+}
+
+@media (max-width: 480px) {
+    .conveyor-belt-container {
+        height: 55px;
+    }
+    
+    .conveyor-belt-container::before {
+        content: "SCORES";
+        padding: 2px 5px;
+    }
+    
+    @keyframes scroll-across {
+        from {
+            left: 100%;
+            opacity: 0;
+            transform: translateY(-50%) translateZ(0);
+        }
+        1% {
+            opacity: 1;
+        }
+        99% {
+            opacity: 1;
+        }
+        to {
+            left: -300px; /* Even smaller for very small screens */
+            opacity: 0;
+            transform: translateY(-50%) translateZ(0);
+            visibility: hidden;
+        }
+    }
+}
+
+/* Accessibility - respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    .conveyor-belt-item {
+        animation-duration: 8s; /* Faster for reduced motion */
+    }
+    
+    .conveyor-belt-container::before {
+        animation: none;
+    }
+    
+    /* Provide alternative for users who prefer reduced motion */
+    .conveyor-belt-container {
+        background: linear-gradient(135deg, #374151 0%, #4b5563 100%);
+    }
+}
+
+/* High contrast support */
+@media (prefers-contrast: high) {
+    .conveyor-belt-container {
+        background: #000;
+        border-color: #fff;
+        box-shadow: 
+            inset 0 2px 4px rgba(255, 255, 255, 0.2),
+            0 4px 8px rgba(0, 0, 0, 0.3);
+    }
+    
+    .conveyor-belt-container::before {
+        background: #fff;
+        color: #000;
+        border: 1px solid #000;
+    }
+    
+    .conveyor-belt-container::after {
+        background: linear-gradient(90deg, 
+            rgba(0, 0, 0, 0.9) 0%,
+            rgba(0, 0, 0, 0.7) 110px,
+            transparent 180px,
+            transparent calc(100% - 180px),
+            rgba(0, 0, 0, 0.7) calc(100% - 110px),
+            rgba(0, 0, 0, 0.9) 100%
+        );
+    }
+}

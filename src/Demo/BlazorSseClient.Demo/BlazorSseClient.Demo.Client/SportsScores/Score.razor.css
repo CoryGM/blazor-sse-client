@@ -1,0 +1,226 @@
+﻿.score-container {
+    display: flex;
+    align-items: center;
+    background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+    color: #1e293b;
+    padding: 4px 12px;
+    margin: 2px 12px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    min-width: 320px;
+    border: 1px solid #cbd5e1;
+    border-left: 4px solid #2563eb;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+    transition: all 0.2s ease;
+    position: relative;
+    height: 44px;
+}
+
+.score-container:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+    border-color: #1d4ed8;
+}
+
+.sport-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%); /* Lightened from #cbd5e1/#b4c5d1 */
+    border: 1px solid #9ca3af;
+    border-radius: 5px;
+    margin-right: 8px;
+    font-size: 14px;
+    color: #374151; /* Slightly darker text to maintain contrast with lighter background */
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+/* New centered team scores container */
+.team-scores-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    gap: 1px;
+    margin: 0 3px;
+}
+
+.team-score-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 160px;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.1;
+}
+
+.team-score-row .team-name {
+    font-weight: 600;
+    color: #374151;
+    text-transform: none;
+    letter-spacing: 0.15px;
+    font-size: 13px;
+    flex: 1;
+    text-align: left;
+    /* Truncate long team names */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 85px;
+}
+
+.team-score-row .score {
+    font-weight: 700;
+    font-size: 15px;
+    color: #1f2937;
+    min-width: 40px;
+    text-align: right;
+    background: linear-gradient(135deg, #d1d5db 0%, #b5bcc4 100%);
+    padding: 1px 6px;
+    border-radius: 3px;
+    border: 1px solid #9ca3af;
+    margin-left: 6px;
+    flex-shrink: 0;
+}
+
+/* Remove old team-score styles since we're using new structure */
+.team-score {
+    /* Legacy support - hide if any old markup exists */
+    display: none;
+}
+
+.progress {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    font-size: 9px;
+    font-weight: 500;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1.0;
+    min-width: 55px;
+    height: 22px;
+    flex-shrink: 0;
+    background: #e2e8f0;
+    padding: 3px 5px;
+    border-radius: 3px;
+    border: 1px solid #b4c5d1;
+    overflow: hidden;
+}
+
+.progress .status {
+    color: #059669;
+    font-weight: 600;
+    font-size: 8px;
+    margin-top: 0px;
+}
+
+/* Final game styling */
+.score-container.final {
+    background: linear-gradient(180deg, #d1d5db 0%, #b5bcc4 100%);
+    border-left-color: #6b7280;
+}
+
+.score-container.final .progress {
+    background: #64748b;
+    color: white;
+}
+
+.score-container.final .progress .status {
+    color: #e2e8f0;
+}
+
+/* Live game styling - more subtle than ESPN */
+.score-container.live {
+    border-left-color: #059669;
+    background: linear-gradient(180deg, #d1fae5 0%, #bbf7d0 100%);
+}
+
+.score-container.live .progress {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    animation: subtle-pulse 3s ease-in-out infinite;
+}
+
+.score-container.live .progress .status {
+    color: #dcfce7;
+}
+
+@keyframes subtle-pulse {
+    0%, 100% { 
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    50% { 
+        background: linear-gradient(135deg, #047857 0%, #065f46 100%);
+    }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .score-container {
+        min-width: 280px;
+        padding: 3px 10px;
+        margin: 2px 8px;
+        height: 40px;
+    }
+    
+    .sport-icon {
+        width: 24px;
+        height: 24px;
+        font-size: 12px;
+        margin-right: 6px;
+    }
+    
+    .team-scores-container {
+        margin: 0 5px;
+    }
+    
+    .team-score-row {
+        max-width: 140px;
+        font-size: 12px;
+    }
+    
+    .team-score-row .team-name {
+        font-size: 12px;
+        max-width: 75px;
+    }
+    
+    .team-score-row .score {
+        font-size: 14px;
+        padding: 1px 5px;
+        min-width: 35px;
+        margin-left: 5px;
+    }
+    
+    .progress {
+        font-size: 8px;
+        min-width: 50px;
+        padding: 2px 4px;
+        height: 18px;
+    }
+    
+    .progress .status {
+        font-size: 7px;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .score-container {
+        border-width: 2px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    
+    .team-score-row .score {
+        border-width: 2px;
+        font-weight: 800;
+    }
+}
