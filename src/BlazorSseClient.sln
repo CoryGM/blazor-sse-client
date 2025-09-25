@@ -27,6 +27,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.Demo.Tests"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorSseClient.Demo.Shared.Tests", "Demo\BlazorSSeClient.Demo.Shared.Tests\BlazorSseClient.Demo.Shared.Tests.csproj", "{9ABEBF6A-4443-432F-B264-CE1740CB4815}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "GitHubActions", "GitHubActions", "{2AA8A0B7-7904-42A5-858C-A84B0370FAC6}"
+	ProjectSection(SolutionItems) = preProject
+		..\.github\workflows\nuget_publish.yml = ..\.github\workflows\nuget_publish.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
