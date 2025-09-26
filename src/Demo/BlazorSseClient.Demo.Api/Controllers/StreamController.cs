@@ -27,6 +27,7 @@ namespace BlazorSseClient.Demo.Api.Controllers
             await foreach (var message in _queue.Subscribe(token))
             {
                 var id = Guid.NewGuid();
+
                 // Build the event with single-line terminations and one blank line to end the event
                 var sb = new System.Text.StringBuilder();
                 sb.AppendLine($"id: {id}");
