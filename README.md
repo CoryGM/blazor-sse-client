@@ -4,13 +4,24 @@ native .NET capabilities.
 
 # Server Sent Events
 Server Sent Events (SSE) is a standard allowing servers to push events to
-clients over HTTP. It is a simpler alternative to WebSockets for many use cases,
-including real-time notifications, live updates, and streaming data.
-SSE is natively supported in modern browsers via the EventSource API, and
-can be easily integrated into Blazor applications using JavaScript interop.
-This library provides a simple and efficient way to use SSE in Blazor
-applications, both on the client-side (Blazor WebAssembly) and server-side
-(Blazor Server).
+clients over HTTP. It is a simpler alternative to WebSockets or SignalR 
+for many use cases, including real-time notifications, live updates, and 
+streaming data. SSE is natively supported in modern browsers via the 
+EventSource API, and can be easily integrated into Blazor applications 
+using JavaScript interop. 
+
+Unfortunately, while .NET has native support for Server Sent Events, Blazor
+WASM does not have direct support for the EventSource API. This means to use
+SSE in a WASM client, JavaScript interop is required. In addition, there are
+number of lifecycle events, error handling, etc. that need to be layered in
+as well for a fully operational and resilient approach in a WASM client. 
+
+This library provides a simple and efficient way to use SSE in Blazor applications, 
+both on the client-side (Blazor WebAssembly) and server-side (Blazor Server). It
+includes a unified API for responding to events so the implementation of responding
+to events is the same on either platform. The only difference is in the registration
+and the setup. 
+
 
 # Features
 - Support for both Blazor WebAssembly and Blazor Server
@@ -78,6 +89,10 @@ builder.Services.AddServerSseClient(options =>
 
 # Usage
 Usage is the same for both Blazor WebAssembly and Blazor Server. 
+
+This example shows only a synchronous implementation of the callback. 
+However, the API does support asynchrounous callbacks with the 
+signature of `func<SseEvent, ValueTask>`
 
 1. Implement IAsyncDisposable in your component:
 ```csharp
