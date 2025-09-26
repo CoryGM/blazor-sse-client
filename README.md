@@ -60,9 +60,8 @@ builder.Services.AddWasmSseClient(options =>
 ```
 
 If you have a hybrid application with the Layout.razor and App.Razor in 
-the server project you will need to set the AutoStart property
-to true on the Wasm client because there isn't really a good place to 
-hook in a Start() call. 
+the server project AutoStart property should be set to true on the Wasm 
+client because there isn't really a good place to hook in a StartAsync() call. 
 
 ## Blazor Server
 To use the library in a Blazor Server application, follow these steps:
@@ -91,7 +90,7 @@ builder.Services.AddServerSseClient(options =>
 Usage is the same for both Blazor WebAssembly and Blazor Server. 
 
 This example shows only a synchronous implementation of the callback. 
-However, the API does support asynchrounous callbacks with the 
+However, the API does support asynchronous callbacks with the 
 signature of `func<SseEvent, ValueTask>`
 
 1. Implement IAsyncDisposable in your component:
@@ -141,7 +140,7 @@ signature of `func<SseEvent, ValueTask>`
              // Perform work using the data 
              // Ideally this would be done in a separate method that
              // would cleanly encapsulate the work.
-             PerformAddScoreWork();
+             PerformAddScoreWork(score);
          }
          catch (JsonException)
          {
@@ -149,9 +148,7 @@ signature of `func<SseEvent, ValueTask>`
              return;
          }
 
-         Console.WriteLine($"Before StateHasChanged. readings.Count: {_readings.Count}");
          InvokeAsync(StateHasChanged);
-         Console.WriteLine("After StateHasChanged");
      }
 
      // Real work done outside the SseClient.Subscribe() callback
@@ -164,10 +161,10 @@ signature of `func<SseEvent, ValueTask>`
      // Cleanup subscriptions 
      public async ValueTask DisposeAsync()
      {
-         if (_weatherSubscriptionId.HasValue)
+         if (_scoreSubscriptionId.HasValue)
          {
              SseClient.Unsubscribe(_messageType, _scoreSubscriptionId.Value);
-             _weatherSubscriptionId = null;
+             _scoreSubscriptionId = null;
          }
      }
  }
