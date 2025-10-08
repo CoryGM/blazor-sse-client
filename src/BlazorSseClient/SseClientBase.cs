@@ -21,30 +21,6 @@ namespace BlazorSseClient
         }
 
         /// <summary>
-        /// Subscribe to all SSE messages with an async handler (Func)
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public Guid SubscribeAll(Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
-            => _allEvents.Add(handler, cancellationToken);
-
-        /// <summary>
-        /// Subscribe to all SSE messages with a synchronous handler (Action) instead of an async handler (Func)
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public Guid SubscribeAll(Action<SseEvent> handler, CancellationToken cancellationToken = default)
-            => _allEvents.Add(handler, cancellationToken);
-
-        /// <summary>
-        /// Unsubscribe from all events using the subscription ID returned when subscribing.
-        /// </summary>
-        /// <param name="id"></param>
-        public void UnsubscribeAll(Guid id) => _allEvents.Remove(id);
-
-        /// <summary>
         /// Subscribe to a specific event type with an async handler (Func)
         /// </summary>
         /// <param name="eventType"></param>
@@ -156,6 +132,12 @@ namespace BlazorSseClient
                 $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
             return $"{url}{sep}{query}";
+        }
+
+        internal async Task DispatchConnectionStateChangeAsync(SseClientSource source, 
+            SseConnectionState state)
+        {
+
         }
 
         internal async Task DispatchOnMessageAsync(SseClientSource clientSource, SseEvent? sseMessage)
