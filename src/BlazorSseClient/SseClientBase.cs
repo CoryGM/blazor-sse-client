@@ -3,6 +3,8 @@
 using Microsoft.Extensions.Logging;
 
 using BlazorSseClient.Services;
+using System.Data;
+using System.Reflection.Metadata.Ecma335;
 
 namespace BlazorSseClient
 {
@@ -13,7 +15,8 @@ namespace BlazorSseClient
             new(StringComparer.OrdinalIgnoreCase);
         private readonly SseEventCallbackBag _allEvents = new();
         protected readonly ILogger? _logger;
-
+        private const string _connStateEventType = "conn-state-408ee135-ea01-475b-9d32-7270ae38e100";
+        
         protected SseClientBase(ILogger? logger = null)
         {
             _logger = logger;
@@ -48,6 +51,14 @@ namespace BlazorSseClient
             var bag = _byEventType.GetOrAdd(eventType, static _ => new SseEventCallbackBag());
 
             return bag.Add(handler, cancellationToken);
+        }
+
+        public virtual Guid SubscribeConnectionStateChange(Func<SseConnectionState, ValueTask> handler, 
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(handler);
+
+            return Subscribe(_connStateEventType, handler, cancellationToken);
         }
 
         /// <summary>
