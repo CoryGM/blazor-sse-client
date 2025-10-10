@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 
 using BlazorSseClient.Services;
 using System.Data;
-using System.Reflection.Metadata.Ecma335;
 
 namespace BlazorSseClient
 {
@@ -53,7 +52,7 @@ namespace BlazorSseClient
             return bag.Add(handler, cancellationToken);
         }
 
-        public virtual Guid SubscribeConnectionStateChange(Func<SseConnectionState, ValueTask> handler, 
+        public virtual Guid SubscribeConnectionStateChange(Func<SseEvent, ValueTask> handler, 
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(handler);
@@ -148,7 +147,13 @@ namespace BlazorSseClient
         internal async Task DispatchConnectionStateChangeAsync(SseClientSource source, 
             SseConnectionState state)
         {
+            var sseMessage = new SseEvent
+            {
+                EventType = _connStateEventType,
+                Data = state.ToString()
+            };
 
+            await DispatchOnMessageAsync(source, sseMessage).ConfigureAwait(false);
         }
 
         internal async Task DispatchOnMessageAsync(SseClientSource clientSource, SseEvent? sseMessage)

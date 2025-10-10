@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
+using BlazorSseClient;
 using BlazorSseClient.Wasm;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -26,5 +27,13 @@ builder.Services.AddWasmSseClient(options =>
 });
 
 var host = builder.Build();
+
+var sseClient = host.Services.GetRequiredService<ISseClient>(); 
+
+sseClient.SubscribeConnectionStateChange(async (e) =>
+{
+    Console.WriteLine($"Connection state changed: {e.Data}");
+    await ValueTask.CompletedTask;
+});
 
 await host.RunAsync();
