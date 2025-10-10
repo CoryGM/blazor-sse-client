@@ -3,6 +3,7 @@
 using Microsoft.Extensions.Logging;
 
 using BlazorSseClient.Services;
+using System.Data;
 
 namespace BlazorSseClient
 {
@@ -13,36 +14,13 @@ namespace BlazorSseClient
             new(StringComparer.OrdinalIgnoreCase);
         private readonly SseEventCallbackBag _allEvents = new();
         protected readonly ILogger? _logger;
-
+        private const string _connStateEventType = "conn-state-408ee135-ea01-475b-9d32-7270ae38e100";
+        
         protected SseClientBase(ILogger? logger = null)
         {
             _logger = logger;
             _logger?.LogTrace("SseClient created.");
         }
-
-        /// <summary>
-        /// Subscribe to all SSE messages with an async handler (Func)
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public Guid SubscribeAll(Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default)
-            => _allEvents.Add(handler, cancellationToken);
-
-        /// <summary>
-        /// Subscribe to all SSE messages with a synchronous handler (Action) instead of an async handler (Func)
-        /// </summary>
-        /// <param name="handler"></param>
-        /// <param name="cancellationToken"></param>
-        /// <returns></returns>
-        public Guid SubscribeAll(Action<SseEvent> handler, CancellationToken cancellationToken = default)
-            => _allEvents.Add(handler, cancellationToken);
-
-        /// <summary>
-        /// Unsubscribe from all events using the subscription ID returned when subscribing.
-        /// </summary>
-        /// <param name="id"></param>
-        public void UnsubscribeAll(Guid id) => _allEvents.Remove(id);
 
         /// <summary>
         /// Subscribe to a specific event type with an async handler (Func)
@@ -72,6 +50,14 @@ namespace BlazorSseClient
             var bag = _byEventType.GetOrAdd(eventType, static _ => new SseEventCallbackBag());
 
             return bag.Add(handler, cancellationToken);
+        }
+
+        public virtual Guid SubscribeConnectionStateChange(Func<SseEvent, ValueTask> handler, 
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(handler);
+
+            return Subscribe(_connStateEventType, handler, cancellationToken);
         }
 
         /// <summary>
@@ -156,6 +142,18 @@ namespace BlazorSseClient
                 $"{Uri.EscapeDataString(kv.Key)}={Uri.EscapeDataString(kv.Value)}"));
 
             return $"{url}{sep}{query}";
+        }
+
+        internal async Task DispatchConnectionStateChangeAsync(SseClientSource source, 
+            SseConnectionState state)
+        {
+            var sseMessage = new SseEvent
+            {
+                EventType = _connStateEventType,
+                Data = state.ToString()
+            };
+
+            await DispatchOnMessageAsync(source, sseMessage).ConfigureAwait(false);
         }
 
         internal async Task DispatchOnMessageAsync(SseClientSource clientSource, SseEvent? sseMessage)

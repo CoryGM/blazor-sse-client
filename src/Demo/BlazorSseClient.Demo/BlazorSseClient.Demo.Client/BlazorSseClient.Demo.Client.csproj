@@ -16,11 +16,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="BlazorSseClient" Version="0.8.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.9" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\BlazorSseClient\BlazorSseClient.csproj" />
     <ProjectReference Include="..\..\BlazorSseClient.Demo.Shared\BlazorSseClient.Demo.Shared.csproj" />
   </ItemGroup>
 

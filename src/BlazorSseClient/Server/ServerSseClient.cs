@@ -139,7 +139,7 @@ namespace BlazorSseClient.Server
             {
                 try
                 {
-                    //await DispatchConnectionStateChangeAsync(SseClientSource.Server, state).ConfigureAwait(false);
+                    await DispatchConnectionStateChangeAsync(SseClientSource.Server, state).ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

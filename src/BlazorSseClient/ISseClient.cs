@@ -10,11 +10,10 @@ public interface ISseClient : IAsyncDisposable
     Task StartAsync(string? url = null, bool restartOnDifferentUrl = true);
     Task StopAsync();
 
-    Guid SubscribeAll(Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default);
-    Guid SubscribeAll(Action<SseEvent> handler, CancellationToken cancellationToken = default);
-    void UnsubscribeAll(Guid id);
     Guid Subscribe(string eventType, Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default);
     Guid Subscribe(string eventType, Action<SseEvent> handler, CancellationToken cancellationToken = default);
     void Unsubscribe(string eventType, Guid id);
     void UnsubscribeOwner(object owner);
+
+    Guid SubscribeConnectionStateChange(Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default);
 }
