@@ -4,6 +4,7 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
 using BlazorSseClient.Services;
+using System.Data;
 
 namespace BlazorSseClient
 {
@@ -50,6 +51,14 @@ namespace BlazorSseClient
             var bag = _byEventType.GetOrAdd(eventType, static _ => new SseEventCallbackBag());
 
             return bag.Add(handler, cancellationToken);
+        }
+
+        public virtual Guid SubscribeConnectionStateChange(Func<SseEvent, ValueTask> handler, 
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(handler);
+
+            return Subscribe(_connStateEventType, handler, cancellationToken);
         }
 
         /// <summary>
