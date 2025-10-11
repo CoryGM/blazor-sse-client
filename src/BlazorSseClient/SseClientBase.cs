@@ -1,9 +1,9 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Data;
+using System.Collections.Concurrent;
 
 using Microsoft.Extensions.Logging;
 
 using BlazorSseClient.Services;
-using System.Data;
 
 namespace BlazorSseClient
 {
@@ -52,11 +52,30 @@ namespace BlazorSseClient
             return bag.Add(handler, cancellationToken);
         }
 
+        /// <summary>
+        /// Subscribe to connection state change events with an async handler (Func)
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
         public virtual Guid SubscribeConnectionStateChange(Func<SseEvent, ValueTask> handler, 
             CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(handler);
 
+            return Subscribe(_connStateEventType, handler, cancellationToken);
+        }
+
+        /// <summary>
+        /// Subscribe to connection state change events with a synchronous handler (Action)
+        /// </summary>
+        /// <param name="handler"></param>
+        /// <param name="cancellationToken"></param>
+        /// <returns></returns>
+        public virtual Guid SubscribeConnectionStateChange(Action<SseEvent> handler,
+            CancellationToken cancellationToken = default)
+        {
+            ArgumentNullException.ThrowIfNull(handler);
             return Subscribe(_connStateEventType, handler, cancellationToken);
         }
 
@@ -144,16 +163,18 @@ namespace BlazorSseClient
             return $"{url}{sep}{query}";
         }
 
-        internal async Task DispatchConnectionStateChangeAsync(SseClientSource source, 
+        internal async Task DispatchConnectionStateChangeAsync(SseClientSource clientSource, 
             SseConnectionState state)
         {
+            _logger?.LogTrace("SSE Dispatch Connection State Change: Source={Source} State={State}", clientSource, state);
+
             var sseMessage = new SseEvent
             {
                 EventType = _connStateEventType,
-                Data = state.ToString()
+                Data = state.ToString().ToLower()
             };
 
-            await DispatchOnMessageAsync(source, sseMessage).ConfigureAwait(false);
+            await DispatchOnMessageAsync(clientSource, sseMessage).ConfigureAwait(false);
         }
 
         internal async Task DispatchOnMessageAsync(SseClientSource clientSource, SseEvent? sseMessage)

@@ -11,7 +11,7 @@
 
 		<!-- Optional: NuGet metadata -->
 		<PackageId>BlazorSseClient</PackageId>
-		<Version>0.9.0</Version>
+		<Version>0.10.0</Version>
 		<Authors>Cory Maass</Authors>
 		<Company></Company>
 		<Description>Typed, lifecycle-safe SSE client for Blazor Server and Blazor WebAssembly with reconnect logic and JS interop.</Description>
@@ -21,11 +21,16 @@
 		<Title>Blazor Server Sent Events Client</Title>
 		<RepositoryType>git</RepositoryType>
 		<PackageLicenseFile>LICENSE</PackageLicenseFile>
-		<Copyright>2024 Cory Maass</Copyright>
+		<Copyright>2025 Cory Maass</Copyright>
 		<PackageProjectUrl>https://github.com/CoryGM/blazor-sse-client/</PackageProjectUrl>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
 	  <None Include="..\..\LICENSE">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	  <None Include="..\..\README.md">
 	    <Pack>True</Pack>
 	    <PackagePath>\</PackagePath>
 	  </None>
