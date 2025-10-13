@@ -4,7 +4,6 @@ using System.Collections.Concurrent;
 using Microsoft.Extensions.Logging;
 
 using BlazorSseClient.Services;
-using System.Data;
 
 namespace BlazorSseClient
 {
@@ -94,6 +93,15 @@ namespace BlazorSseClient
             {
                 bag.Remove(id);
             }
+        }
+
+        /// <summary>
+        /// Unsubscribe a handler from the connection state change lifelycycle events.
+        /// </summary>
+        /// <param name="id"></param>
+        public virtual void UnsubscribeConnectionStateChange(Guid id)
+        {
+            Unsubscribe(_connStateEventType, id);
         }
 
         /// <summary>

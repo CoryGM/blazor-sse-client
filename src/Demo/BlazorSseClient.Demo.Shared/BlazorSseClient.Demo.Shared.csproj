@@ -7,9 +7,15 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="SportsScores\Components\SportsTicker\" />
-    <Folder Include="Stocks\Components\StockTicker\" />
-    <Folder Include="Weather\Components\Weather\" />
+    <Compile Remove="SportsScores\Components\**" />
+    <Compile Remove="Stocks\Components\**" />
+    <Compile Remove="Weather\Components\**" />
+    <EmbeddedResource Remove="SportsScores\Components\**" />
+    <EmbeddedResource Remove="Stocks\Components\**" />
+    <EmbeddedResource Remove="Weather\Components\**" />
+    <None Remove="SportsScores\Components\**" />
+    <None Remove="Stocks\Components\**" />
+    <None Remove="Weather\Components\**" />
   </ItemGroup>
 
 </Project>

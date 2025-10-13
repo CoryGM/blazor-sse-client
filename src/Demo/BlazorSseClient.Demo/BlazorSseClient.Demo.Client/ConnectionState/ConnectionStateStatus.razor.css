@@ -1,0 +1,23 @@
+﻿.render-location-header {
+    margin-top: 2rem;
+    margin-bottom: -.15rem;
+    margin-left: 1rem;
+    color: #d7d7d7;
+}
+
+.state-container {
+    color: #d7d7d7;
+    margin-left: 1rem;
+}
+
+.state-label {
+    display: inline-block;
+    font-weight: 600;
+    width: 5rem;
+    max-width: 6rem;
+    min-width: 5rem;
+}
+
+.state-value {
+    display: inline-block;
+}

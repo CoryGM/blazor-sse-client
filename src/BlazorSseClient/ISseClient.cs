@@ -17,4 +17,5 @@ public interface ISseClient : IAsyncDisposable
 
     Guid SubscribeConnectionStateChange(Func<SseEvent, ValueTask> handler, CancellationToken cancellationToken = default);
     Guid SubscribeConnectionStateChange(Action<SseEvent> handler, CancellationToken cancellationToken = default);
+    void UnsubscribeConnectionStateChange(Guid id);
 }

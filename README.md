@@ -173,6 +173,46 @@ An example of this working both for rendering on the server or
 rending in the browser can be seen in the demo application at 
 on the [Scores page](https://localhost:7041/scores).
 
+## Connection Lifecycle Events
+
+The library supports connection lifecycle events to allow you to
+respond to changes in the connection state. The events are:
+
+- Opening: The connection is being opened.
+- Open: The connection has been successfully opened.
+- Reopening: The connection is being reopened after a disconnection.
+- Reopened: The connection has been successfully reopened after a disconnection.
+- Closed: The connection has been closed.
+
+When checking for the type of event, the event types are all lowercase strings
+of the values above.
+
+To handle these events, you can subscribe to them using the `_sseClient.SubscribeConnectionStateChange()`
+method:
+
+```csharp
+protected override void OnAfterRender(bool firstRender)
+{
+    if (firstRender)
+    {
+        _sseSubscriptionId = _sseClient.Subscribe(_messageType, OnMeetChangedCallback);
+        _sseCallbackSubscriptionId = _sseClient.SubscribeConnectionStateChange(OnSseConnectionStateChange);
+    }
+}
+
+private void OnSseConnectionStateChange(SseEvent sseEvent)
+{
+    if (sseEvent.Data == "reopened")
+        Task.Run(async () => await GetViewModelAsync());
+}
+```
+
+Make sure to unsubscribe from the connection state change event in the 
+`DisposeAsync()` or `Dispose()` methods:
+```csharp
+if (_sseCallbackSubscriptionId.HasValue)
+    _sseClient.Unsubscribe(_sseCallbackSubscriptionId.Value);
+```
 # Demo Project
 The demo project is an Aspire application and the startup project
 should be set to BlazorSseClient.AppHost.
@@ -185,6 +225,21 @@ data to a queue that is watched by the method Stream method on the
 StreamController. This was done to show a somewhat realistic 
 method of watching for events produced by external sources that need
 to be streamed to the clients. 
+
+### Import Caveat for the Stream Controller and JS EventSource
+
+Some examples for SSE projects will show each line of the output 
+as a separate WriteAsync() for the id: and event: and data: lines. 
+
+This approach will work for the native client in .NET because it
+can correctly interpret the stream. It will NOT work for the JavaScript
+Interop because the native JavaScript EventSource component does not
+correctly interpret the stream when the components are send individually.
+
+Therefor, if you are creating the API side make sure to follow the 
+example in the API controller of building the string to send and then
+sending it in a single WriteAsync();
+
 
 ```csharp
  [HttpGet]
@@ -218,22 +273,6 @@ to be streamed to the clients.
      }
  }
 ```
-
-### Import Caveat for the Stream Controller and JS EventSource
-
-Some examples for SSE projects will show each line of the output 
-as a separate WriteAsync() for the id: and event: and data: lines. 
-
-This approach will work for the native client in .NET because it
-can correctly interpret the stream. It will NOT work for the JavaScript
-Interop because the native JavaScript EventSource component does not
-correctly interpret the stream when the components are send individually.
-
-Therefor, if you are creating the API side make sure to follow the 
-example in the API controller of building the string to send and then
-sending it in a single WriteAsync();
-
-
 
 
 

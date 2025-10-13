@@ -3,6 +3,8 @@ let reconnectAttempts = 0;
 let reconnectTimer = null;
 let dotNetRef = null;
 let currentUrl = null;
+let isPageVisible = true;
+let healthCheckTimer = null;
 
 let cfg = {
     reconnectBaseDelayMs: 1000,
@@ -50,6 +52,9 @@ const subscriptions = new Map();
 export function startSse(url, dotNetReference, options) {
     stopSse(); // ensures clean slate
 
+    // Add this when starting SSE
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     runStateChanged(STATE_RUN_STARTING, true);
     currentUrl = url;
     dotNetRef = dotNetReference;
@@ -62,6 +67,7 @@ export function startSse(url, dotNetReference, options) {
     }
 
     connect();
+    startHealthCheck(); // Add health monitoring
 
     runStateChanged(STATE_RUN_STARTED, true);
 }
@@ -209,6 +215,26 @@ export function clearSubscriptions() {
     }
 }
 
+function handleVisibilityChange() {
+    const wasVisible = isPageVisible;
+    isPageVisible = !document.hidden;
+
+    log('Page visibility changed:', isPageVisible ? 'visible' : 'hidden');
+
+    if (!wasVisible && isPageVisible) {
+        // Page became visible again
+        log('Page became visible, checking connection...');
+
+        // Force a connection check after a short delay
+        setTimeout(() => {
+            if (runState === STATE_RUN_STARTED && connectionState === STATE_CONNECTION_CLOSED) {
+                log('Forcing reconnection after page visibility change');
+                connect();
+            }
+        }, 500);
+    }
+}
+
 function cleanupEventSource() {
     if (!eventSource) return;
 
@@ -254,22 +280,34 @@ function connect() {
 
         eventSource.onopen = () => {
             log('connection opened');
+            log('EventSource readyState:', eventSource.readyState);
 
-            connectionStateChanged(STATE_CONNECTION_OPEN, true);
+            // Add a small delay to ensure the connection is fully established
+            setTimeout(() => {
+                if (eventSource && eventSource.readyState === EventSource.OPEN) {
+                    connectionStateChanged(STATE_CONNECTION_OPEN, true);
+                    reconnectAttempts = 0;
+                }
+            }, 100);
 
             reconnectAttempts = 0;
         };
 
         eventSource.onerror = () => {
             log('connection error');
+            log('EventSource readyState:', eventSource?.readyState);
 
-            // Move to closed and take over reconnection logic (disable native auto-retry)
-            connectionStateChanged(STATE_CONNECTION_CLOSED, true);
+            // Only handle if we're not already closed
+            if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
+                connectionStateChanged(STATE_CONNECTION_CLOSED, true);
+                cleanupEventSource();
+                scheduleReconnect();
+            }
+        };
 
-            // Explicitly stop the browser's auto-reconnect to avoid overlapping connections
-            cleanupEventSource();
-
-            scheduleReconnect();
+        // Add onmessage handler for debugging
+        eventSource.onmessage = (event) => {
+            log('Default message received:', event);
         };
 
     } catch (err) {
@@ -309,11 +347,15 @@ export function stopSse() {
 
     runStateChanged(STATE_RUN_STOPPING, true);
 
+    stopHealthCheck(); // Stop health monitoring
+
     // Stop reconnect attempts
     if (reconnectTimer) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
     }
+
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
 
     // Close the current EventSource (and detach handlers)
     cleanupEventSource();
@@ -330,6 +372,31 @@ export function stopSse() {
     // Release the .NET ref last
     dotNetRef = null;
     currentUrl = null;
+}
+
+function startHealthCheck() {
+    if (healthCheckTimer) {
+        clearInterval(healthCheckTimer);
+    }
+
+    healthCheckTimer = setInterval(() => {
+        if (runState === STATE_RUN_STARTED && eventSource) {
+            log('Health check - EventSource readyState:', eventSource.readyState);
+
+            if (eventSource.readyState === EventSource.CLOSED && connectionState !== STATE_CONNECTION_CLOSED) {
+                log('Health check detected closed connection, triggering reconnect');
+                connectionStateChanged(STATE_CONNECTION_CLOSED, true);
+                scheduleReconnect();
+            }
+        }
+    }, 5000); // Check every 5 seconds
+}
+
+function stopHealthCheck() {
+    if (healthCheckTimer) {
+        clearInterval(healthCheckTimer);
+        healthCheckTimer = null;
+    }
 }
 
 function safeInvoke(method, ...args) {
