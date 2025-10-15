@@ -11,7 +11,7 @@
 
 		<!-- Optional: NuGet metadata -->
 		<PackageId>BlazorSseClient</PackageId>
-		<Version>0.11.0</Version>
+		<Version>0.12.0</Version>
 		<Authors>Cory Maass</Authors>
 		<Company></Company>
 		<Description>Typed, lifecycle-safe SSE client for Blazor Server and Blazor WebAssembly with reconnect logic and JS interop.</Description>
