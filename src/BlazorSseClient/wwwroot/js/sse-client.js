@@ -260,44 +260,69 @@ function connect() {
     if (runState !== STATE_RUN_STARTING && runState !== STATE_RUN_STARTED) return;
     if (connectionState !== STATE_CONNECTION_CLOSED && connectionState !== STATE_CONNECTION_REOPENING) return;
 
-    // Ensure we never have two concurrent EventSource instances
     cleanupEventSource();
 
     if (reconnectAttempts === 0) {
         connectionStateChanged(STATE_CONNECTION_OPENING, true);
     }
 
-    // Announce a single "reopening" per outage
     if (reconnectAttempts === 1) {
         connectionStateChanged(STATE_CONNECTION_REOPENING, true);
     }
 
     try {
         eventSource = new EventSource(currentUrl, { withCredentials: cfg.useCredentials });
-
-        // Attach any previously registered subscriptions immediately so dynamic subscriptions work post-connect.
         attachAllSubscriptions();
 
-        eventSource.onopen = () => {
-            log('connection opened');
-            log('EventSource readyState:', eventSource.readyState);
+        // Enhanced connection detection with fallback
+        let connectionCheckTimer = null;
+        let openEventFired = false;
 
-            // Add a small delay to ensure the connection is fully established
+        eventSource.onopen = () => {
+            log('onopen fired');
+            openEventFired = true;
+            handleConnectionOpen();
+        };
+
+        // Fallback: Check readyState periodically if onopen doesn't fire
+        connectionCheckTimer = setInterval(() => {
+            if (eventSource && eventSource.readyState === EventSource.OPEN && !openEventFired) {
+                log('Connection detected via readyState check (onopen did not fire)');
+                handleConnectionOpen();
+            }
+            
+            // Clean up timer once we've handled the connection or EventSource is gone
+            if (openEventFired || !eventSource) {
+                clearInterval(connectionCheckTimer);
+            }
+        }, 100);
+
+        function handleConnectionOpen() {
+            if (connectionCheckTimer) {
+                clearInterval(connectionCheckTimer);
+                connectionCheckTimer = null;
+            }
+            
+            log('Connection established, readyState:', eventSource?.readyState);
+            
+            // Add a small delay and validate the connection is truly open
             setTimeout(() => {
                 if (eventSource && eventSource.readyState === EventSource.OPEN) {
                     connectionStateChanged(STATE_CONNECTION_OPEN, true);
                     reconnectAttempts = 0;
                 }
             }, 100);
-
-            reconnectAttempts = 0;
-        };
+        }
 
         eventSource.onerror = () => {
-            log('connection error');
-            log('EventSource readyState:', eventSource?.readyState);
+            // Clean up the connection check timer on error
+            if (connectionCheckTimer) {
+                clearInterval(connectionCheckTimer);
+                connectionCheckTimer = null;
+            }
+            
+            log('connection error, readyState:', eventSource?.readyState);
 
-            // Only handle if we're not already closed
             if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
                 connectionStateChanged(STATE_CONNECTION_CLOSED, true);
                 cleanupEventSource();
@@ -305,9 +330,13 @@ function connect() {
             }
         };
 
-        // Add onmessage handler for debugging
         eventSource.onmessage = (event) => {
             log('Default message received:', event);
+            // Any message confirms the connection is working
+            if (connectionState !== STATE_CONNECTION_OPEN) {
+                log('Connection confirmed via message receipt');
+                connectionStateChanged(STATE_CONNECTION_OPEN, true);
+            }
         };
 
     } catch (err) {
