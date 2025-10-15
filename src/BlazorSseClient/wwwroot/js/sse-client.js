@@ -5,6 +5,8 @@ let dotNetRef = null;
 let currentUrl = null;
 let isPageVisible = true;
 let healthCheckTimer = null;
+let connectionCheckTimer = null;
+let openEventFired = false;
 
 let cfg = {
     reconnectBaseDelayMs: 1000,
@@ -254,12 +256,21 @@ function cleanupEventSource() {
     }
 }
 
+function clearConnectionCheckTimer() {
+    if (connectionCheckTimer) {
+        clearInterval(connectionCheckTimer);
+        connectionCheckTimer = null;
+    }
+}
+
 function connect() {
     if (!dotNetRef) return;
     if (!currentUrl) return;
     if (runState !== STATE_RUN_STARTING && runState !== STATE_RUN_STARTED) return;
-    if (connectionState !== STATE_CONNECTION_CLOSED && connectionState !== STATE_CONNECTION_REOPENING) return;
 
+    // Clear any existing connection check timer
+    clearConnectionCheckTimer();
+    
     cleanupEventSource();
 
     if (reconnectAttempts === 0) {
@@ -274,9 +285,8 @@ function connect() {
         eventSource = new EventSource(currentUrl, { withCredentials: cfg.useCredentials });
         attachAllSubscriptions();
 
-        // Enhanced connection detection with fallback
-        let connectionCheckTimer = null;
-        let openEventFired = false;
+        // Reset the flag for each new connection attempt
+        openEventFired = false;
 
         eventSource.onopen = () => {
             log('onopen fired');
@@ -285,45 +295,58 @@ function connect() {
         };
 
         // Fallback: Check readyState periodically if onopen doesn't fire
+        // Increase check interval and add max attempts to prevent infinite checking
+        let checkAttempts = 0;
+        const maxCheckAttempts = 100; // 10 seconds total (100ms * 100)
+        
         connectionCheckTimer = setInterval(() => {
-            if (eventSource && eventSource.readyState === EventSource.OPEN && !openEventFired) {
+            checkAttempts++;
+            
+            if (!eventSource) {
+                log('EventSource gone during connection check');
+                clearConnectionCheckTimer();
+                return;
+            }
+
+            log(`Connection check attempt ${checkAttempts}, readyState: ${eventSource.readyState}, onopen fired: ${openEventFired}`);
+
+            if (eventSource.readyState === EventSource.OPEN && !openEventFired) {
                 log('Connection detected via readyState check (onopen did not fire)');
+                openEventFired = true;  // Prevent double-handling
                 handleConnectionOpen();
+                return;
             }
             
-            // Clean up timer once we've handled the connection or EventSource is gone
-            if (openEventFired || !eventSource) {
-                clearInterval(connectionCheckTimer);
+            // Clean up timer if open event fired or max attempts reached
+            if (openEventFired || checkAttempts >= maxCheckAttempts) {
+                if (checkAttempts >= maxCheckAttempts) {
+                    warn('Connection check max attempts reached without detecting open state');
+                }
+                clearConnectionCheckTimer();
             }
         }, 100);
 
         function handleConnectionOpen() {
-            if (connectionCheckTimer) {
-                clearInterval(connectionCheckTimer);
-                connectionCheckTimer = null;
-            }
+            clearConnectionCheckTimer();
             
             log('Connection established, readyState:', eventSource?.readyState);
             
-            // Add a small delay and validate the connection is truly open
-            setTimeout(() => {
-                if (eventSource && eventSource.readyState === EventSource.OPEN) {
-                    connectionStateChanged(STATE_CONNECTION_OPEN, true);
-                    reconnectAttempts = 0;
-                }
-            }, 100);
+            // Validate the connection is truly open
+            if (eventSource && eventSource.readyState === EventSource.OPEN) {
+                connectionStateChanged(STATE_CONNECTION_OPEN, true);
+                reconnectAttempts = 0;
+            } else {
+                warn('handleConnectionOpen called but EventSource not in OPEN state');
+            }
         }
 
         eventSource.onerror = () => {
-            // Clean up the connection check timer on error
-            if (connectionCheckTimer) {
-                clearInterval(connectionCheckTimer);
-                connectionCheckTimer = null;
-            }
+            clearConnectionCheckTimer();
             
             log('connection error, readyState:', eventSource?.readyState);
 
-            if (eventSource && eventSource.readyState !== EventSource.CLOSED) {
+            // Handle error regardless of readyState - the connection is broken
+            if (eventSource) {
                 connectionStateChanged(STATE_CONNECTION_CLOSED, true);
                 cleanupEventSource();
                 scheduleReconnect();
@@ -335,12 +358,15 @@ function connect() {
             // Any message confirms the connection is working
             if (connectionState !== STATE_CONNECTION_OPEN) {
                 log('Connection confirmed via message receipt');
+                openEventFired = true;
+                clearConnectionCheckTimer();
                 connectionStateChanged(STATE_CONNECTION_OPEN, true);
             }
         };
 
     } catch (err) {
         console.error('SSE connection setup failed:', err);
+        clearConnectionCheckTimer();
         cleanupEventSource();
         scheduleReconnect();
     }
@@ -377,6 +403,7 @@ export function stopSse() {
     runStateChanged(STATE_RUN_STOPPING, true);
 
     stopHealthCheck(); // Stop health monitoring
+    clearConnectionCheckTimer(); // Clear connection check timer
 
     // Stop reconnect attempts
     if (reconnectTimer) {
@@ -397,6 +424,7 @@ export function stopSse() {
     runStateChanged(STATE_RUN_STOPPED, canBroadcast);
 
     reconnectAttempts = 0;
+    openEventFired = false;
 
     // Release the .NET ref last
     dotNetRef = null;
@@ -415,6 +443,7 @@ function startHealthCheck() {
             if (eventSource.readyState === EventSource.CLOSED && connectionState !== STATE_CONNECTION_CLOSED) {
                 log('Health check detected closed connection, triggering reconnect');
                 connectionStateChanged(STATE_CONNECTION_CLOSED, true);
+                cleanupEventSource();
                 scheduleReconnect();
             }
         }
